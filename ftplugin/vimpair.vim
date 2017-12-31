@@ -8,6 +8,12 @@ def send_contents_update():
   message = 'VIMPAIR_FULL_UPDATE|%d|%s' % (len(content), content)
   for connection in connections: connection.send_message(message)
 
+def send_cursor_position():
+  # Vim counts lines 1-based, but columns are 0-based. Unifying.
+  line, column = vim.current.window.cursor
+  message = 'VIMPAIR_CURSOR_POSITION|%d|%d' % (line - 1, column)
+  for connection in connections: connection.send_message(message)
+
 EOF
 
 function! VimpairServerStart()
@@ -20,4 +26,5 @@ endfunction
 
 function! VimpairServerUpdate()
   python send_contents_update()
+  python send_cursor_position()
 endfunction
