@@ -24,16 +24,12 @@ endfunction
 function! VPServerTest_sends_buffer_contents_on_connection_1()
   execute("normal iThis is just some text")
 
-  call VimpairServerUpdate()
-
   call _VPServerTest_assert_has_sent_message(
     \ "VIMPAIR_FULL_UPDATE|22|This is just some text")
 endfunction
 
 function! VPServerTest_sends_buffer_contents_on_connection_2()
   execute("normal iThis is some other text")
-
-  call VimpairServerUpdate()
 
   call _VPServerTest_assert_has_sent_message(
     \ "VIMPAIR_FULL_UPDATE|23|This is some other text")
@@ -42,8 +38,6 @@ endfunction
 function! VPServerTest_sends_buffer_contents_on_connection_3()
   execute("normal iThis is line one")
   execute("normal oThis is line two")
-
-  call VimpairServerUpdate()
 
   call _VPServerTest_assert_has_sent_message(
     \ "VIMPAIR_FULL_UPDATE|33|This is line one\nThis is line two")

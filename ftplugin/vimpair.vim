@@ -17,11 +17,21 @@ def send_cursor_position():
 EOF
 
 function! VimpairServerStart()
+  augroup VimpairServer
+    autocmd TextChanged * python send_contents_update()
+    autocmd TextChangedI * python send_contents_update()
+    autocmd InsertLeave * python send_contents_update()
+  augroup END
+
   python connections = []
 endfunction
 
 function! VimpairServerStop()
   python connections = None
+
+  augroup VimpairServer
+    autocmd!
+  augroup END
 endfunction
 
 function! VimpairServerUpdate()
