@@ -46,9 +46,11 @@ endfunction
 function! VPServerTest_sends_cursor_position_on_connection_1()
   execute("normal iThis is line one")
   execute("normal oThis is line two")
-  execute("normal gg0ww")
 
-  call VimpairServerUpdate()
+  execute("normal gg0ww")
+  " The CursorMoved autocommand is not reported in this scope,
+  " so we need to manually trigger it
+  execute("doautocmd CursorMoved")
 
   call _VPServerTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|0|8")
 endfunction
@@ -56,9 +58,11 @@ endfunction
 function! VPServerTest_sends_cursor_position_on_connection_2()
   execute("normal iThis is line one")
   execute("normal oThis is line two")
-  execute("normal G0w")
 
-  call VimpairServerUpdate()
+  execute("normal G0w")
+  " The CursorMoved autocommand is not reported in this scope,
+  " so we need to manually trigger it
+  execute("doautocmd CursorMoved")
 
   call _VPServerTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|1|5")
 endfunction
