@@ -1,4 +1,5 @@
 python from mock import Mock
+execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 
@@ -68,13 +69,4 @@ function! VPServerTest_sends_cursor_position_on_connection_2()
 endfunction
 
 
-for Test in [
-  \ function("VPServerTest_sends_buffer_contents_on_connection_1"),
-  \ function("VPServerTest_sends_buffer_contents_on_connection_2"),
-  \ function("VPServerTest_sends_buffer_contents_on_connection_3"),
-  \ function("VPServerTest_sends_cursor_position_on_connection_1"),
-  \ function("VPServerTest_sends_cursor_position_on_connection_2")]
-  call _VPServerTest_set_up()
-  call Test()
-  call _VPServerTest_tear_down()
-endfor
+call VPTestTools_run_tests("VPServerTest")
