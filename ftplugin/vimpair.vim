@@ -1,18 +1,23 @@
 python << EOF
-import vim
+import sys, os, vim
+script_path = vim.eval('expand("<sfile>:p:h")')
+python_path = os.path.abspath(os.path.join(script_path, 'python'))
+
+if not python_path in sys.path:
+  sys.path.append(python_path)
+
+from vim_interface import get_current_contents, get_cursor_position
 
 connections = []
 
 def send_contents_update():
-  content = reduce(lambda l1, l2: l1 + '\n' + l2, vim.current.buffer)
+  content = get_current_contents(vim=vim)
   message = 'VIMPAIR_FULL_UPDATE|%d|%s' % (len(content), content)
   for connection in connections:
     connection.send_message(message)
 
 def send_cursor_position():
-  # Vim counts lines 1-based, but columns are 0-based. Unifying.
-  line, column = vim.current.window.cursor
-  message = 'VIMPAIR_CURSOR_POSITION|%d|%d' % (line - 1, column)
+  message = 'VIMPAIR_CURSOR_POSITION|%d|%d' % get_cursor_position(vim=vim)
   for connection in connections:
     connection.send_message(message)
 

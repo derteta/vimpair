@@ -22,29 +22,14 @@ function! _VPServerTest_assert_has_sent_message(expected)
 endfunction
 
 
-function! VPServerTest_sends_buffer_contents_on_connection_1()
+function! VPServerTest_sends_buffer_contents_on_connection()
   execute("normal iThis is just some text")
 
   call _VPServerTest_assert_has_sent_message(
     \ "VIMPAIR_FULL_UPDATE|22|This is just some text")
 endfunction
 
-function! VPServerTest_sends_buffer_contents_on_connection_2()
-  execute("normal iThis is some other text")
-
-  call _VPServerTest_assert_has_sent_message(
-    \ "VIMPAIR_FULL_UPDATE|23|This is some other text")
-endfunction
-
-function! VPServerTest_sends_buffer_contents_on_connection_3()
-  execute("normal iThis is line one")
-  execute("normal oThis is line two")
-
-  call _VPServerTest_assert_has_sent_message(
-    \ "VIMPAIR_FULL_UPDATE|33|This is line one\nThis is line two")
-endfunction
-
-function! VPServerTest_sends_cursor_position_on_connection_1()
+function! VPServerTest_sends_cursor_position_on_connection()
   execute("normal iThis is line one")
   execute("normal oThis is line two")
 
@@ -54,18 +39,6 @@ function! VPServerTest_sends_cursor_position_on_connection_1()
   execute("doautocmd CursorMoved")
 
   call _VPServerTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|0|8")
-endfunction
-
-function! VPServerTest_sends_cursor_position_on_connection_2()
-  execute("normal iThis is line one")
-  execute("normal oThis is line two")
-
-  execute("normal G0w")
-  " The CursorMoved autocommand is not reported in this scope,
-  " so we need to manually trigger it
-  execute("doautocmd CursorMoved")
-
-  call _VPServerTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|1|5")
 endfunction
 
 
