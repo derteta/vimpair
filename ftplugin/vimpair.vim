@@ -21,6 +21,18 @@ def send_cursor_position():
   for connection in connections:
     connection.send_message(message)
 
+def process_messages():
+  if connections:
+    for message in connections[0].received_messages:
+      contents = message[23:]
+      current_buffer = vim.current.buffer
+      del current_buffer[:]
+      for index, line in enumerate(contents.split('\n')):
+        if index < len(current_buffer):
+          current_buffer[index] = line
+        else:
+          current_buffer.append(line)
+
 EOF
 
 function! VimpairServerStart()
@@ -46,4 +58,16 @@ endfunction
 function! VimpairServerUpdate()
   python send_contents_update()
   python send_cursor_position()
+endfunction
+
+function! VimpairClientStart()
+  python connections = []
+endfunction
+
+function! VimpairClientStop()
+  python connections = None
+endfunction
+
+function! VimpairClientUpdate()
+  python process_messages()
 endfunction
