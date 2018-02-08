@@ -24,14 +24,19 @@ def send_cursor_position():
 def process_messages():
   if connections:
     for message in connections[0].received_messages:
-      contents = message[23:]
-      current_buffer = vim.current.buffer
-      del current_buffer[:]
-      for index, line in enumerate(contents.split('\n')):
-        if index < len(current_buffer):
-          current_buffer[index] = line
-        else:
-          current_buffer.append(line)
+      if message.startswith('VIMPAIR_FULL_UPDATE'):
+        contents = message[23:]
+        current_buffer = vim.current.buffer
+        del current_buffer[:]
+        for index, line in enumerate(contents.split('\n')):
+          if index < len(current_buffer):
+            current_buffer[index] = line
+          else:
+            current_buffer.append(line)
+      elif message.startswith('VIMPAIR_CURSOR_POSITION'):
+        contents = message[24:]
+        line, row = map(int, contents.split('|'))
+        vim.current.window.cursor = (line + 1, row)
 
 EOF
 

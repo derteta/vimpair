@@ -73,5 +73,15 @@ function! VPClientTest_received_contents_updates_overwrite_existing_contents()
   call _VPClientTest_assert_buffer_has_contents(["This is line one"])
 endfunction
 
+function! VPClientTest_received_cursor_position_is_applied()
+  execute("normal iThis is line one")
+  execute("normal oThis is line two")
+  python fake_connection.received_messages = ["VIMPAIR_CURSOR_POSITION|0|8"]
+
+  call VimpairClientUpdate()
+
+  python assert vim.current.window.cursor == (1, 8)
+endfunction
+
 
 call VPTestTools_run_tests("VPClientTest")
