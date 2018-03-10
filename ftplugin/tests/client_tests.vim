@@ -24,42 +24,13 @@ function! _VPClientTest_assert_buffer_has_contents(expected)
 endfunction
 
 
-function! VPClientTest_applies_received_contents_updates_1()
+function! VPClientTest_applies_received_contents_updates()
   python fake_connection.received_messages =
         \ ["VIMPAIR_FULL_UPDATE|16|This is line one"]
 
   call VimpairClientUpdate()
 
   call _VPClientTest_assert_buffer_has_contents(["This is line one"])
-endfunction
-
-function! VPClientTest_applies_received_contents_updates_2()
-  python fake_connection.received_messages =
-        \ ["VIMPAIR_FULL_UPDATE|23|This is line one\nThis is line two"]
-
-  call VimpairClientUpdate()
-
-  call _VPClientTest_assert_buffer_has_contents(
-        \ ["This is line one", "This is line two"])
-endfunction
-
-function! VPClientTest_received_contents_updates_overwrite_existing_contents()
-  python fake_connection.received_messages =
-        \ ["VIMPAIR_FULL_UPDATE|16|This is line one"]
-
-  call VimpairClientUpdate()
-
-  call _VPClientTest_assert_buffer_has_contents(["This is line one"])
-endfunction
-
-function! VPClientTest_applies_received_contents_updates_2()
-  python fake_connection.received_messages =
-        \ ["VIMPAIR_FULL_UPDATE|23|This is line one\nThis is line two"]
-
-  call VimpairClientUpdate()
-
-  call _VPClientTest_assert_buffer_has_contents(
-        \ ["This is line one", "This is line two"])
 endfunction
 
 function! VPClientTest_received_contents_updates_overwrite_existing_contents()

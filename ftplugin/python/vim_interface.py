@@ -17,3 +17,27 @@ def get_cursor_position(vim=None):
         return max(0, line - 1), max(0, column)
     except AttributeError:
         return (0, 0)
+
+
+def apply_contents_update(contents_string, vim=None):
+    try:
+        current_buffer = vim.current.buffer
+        if current_buffer is not None:
+            del current_buffer[:]
+            for index, line in enumerate(contents_string.split('\n')):
+                if index < len(current_buffer):
+                    current_buffer[index] = line
+                else:
+                    current_buffer.append(line)
+    except AttributeError:
+        pass
+
+
+def apply_cursor_position(line, column, vim=None):
+    try:
+        current_buffer = vim.current.buffer or []
+        if line < len(current_buffer) and column < len(current_buffer[line]):
+            # Vim counts lines 1-based, this is called with 0-based values.
+            vim.current.window.cursor = (line + 1, column)
+    except AttributeError:
+        pass

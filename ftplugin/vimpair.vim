@@ -6,7 +6,12 @@ python_path = os.path.abspath(os.path.join(script_path, 'python'))
 if not python_path in sys.path:
   sys.path.append(python_path)
 
-from vim_interface import get_current_contents, get_cursor_position
+from vim_interface import (
+  apply_contents_update,
+  apply_cursor_position,
+  get_current_contents,
+  get_cursor_position,
+)
 
 connections = []
 
@@ -26,17 +31,11 @@ def process_messages():
     for message in connections[0].received_messages:
       if message.startswith('VIMPAIR_FULL_UPDATE'):
         contents = message[23:]
-        current_buffer = vim.current.buffer
-        del current_buffer[:]
-        for index, line in enumerate(contents.split('\n')):
-          if index < len(current_buffer):
-            current_buffer[index] = line
-          else:
-            current_buffer.append(line)
+        apply_contents_update(contents, vim=vim)
       elif message.startswith('VIMPAIR_CURSOR_POSITION'):
         contents = message[24:]
-        line, row = map(int, contents.split('|'))
-        vim.current.window.cursor = (line + 1, row)
+        line, column = map(int, contents.split('|'))
+        apply_cursor_position(line, column, vim=vim)
 
 EOF
 

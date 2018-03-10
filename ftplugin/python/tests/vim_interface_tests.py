@@ -1,14 +1,21 @@
 from mock import Mock
 from unittest import TestCase
 
-from ..vim_interface import get_current_contents, get_cursor_position
+from ..vim_interface import (
+    apply_contents_update,
+    apply_cursor_position,
+    get_current_contents,
+    get_cursor_position,
+)
 
 
 def mock_vim_with_contents(contents):
     return Mock(current=Mock(buffer=contents))
 
-def mock_vim_with_cursor(cursor):
-    return Mock(current=Mock(window=Mock(cursor=cursor)))
+def mock_vim_with_cursor(cursor, contents=None):
+    vim = Mock(current=Mock(window=Mock(cursor=cursor)))
+    vim.current.buffer = contents
+    return vim
 
 
 class GetCurrentContentsTests(TestCase):
@@ -71,3 +78,87 @@ class GetCursorPositionTests(TestCase):
         vim = mock_vim_with_cursor((1, -7))
         _line, column = get_cursor_position(vim=vim)
         self.assertEqual(column, 0)
+
+
+class ApplyCurrentContentsTests(TestCase):
+
+    def test_noop_without_vim(self):
+        vim = None
+        apply_contents_update('This is one line.', vim=vim)
+
+    def test_noop_without_current(self):
+        vim = Mock(current=None)
+        apply_contents_update('This is one line.', vim=vim)
+
+    def test_noop_without_buffer(self):
+        vim = mock_vim_with_contents(None)
+        apply_contents_update('This is one line.', vim=vim)
+
+    def test_applies_single_line_string(self):
+        vim = mock_vim_with_contents([''])
+
+        apply_contents_update('This is one line.', vim=vim)
+
+        self.assertEqual(vim.current.buffer, ['This is one line.'])
+
+    def test_applies_multiple_line_string(self):
+        vim = mock_vim_with_contents([''])
+
+        apply_contents_update(
+            'This is one line.\nThis is another line.',
+            vim=vim
+        )
+
+        self.assertEqual(
+            vim.current.buffer,
+            ['This is one line.', 'This is another line.']
+        )
+
+
+class ApplyCursorPositionTests(TestCase):
+
+    def test_noop_without_vim(self):
+        vim = None
+        apply_cursor_position(0, 0, vim=vim)
+
+    def test_noop_without_current(self):
+        vim = Mock(current=None)
+        apply_cursor_position(0, 0, vim=vim)
+
+    def test_noop_without_window(self):
+        vim = Mock(current=Mock(window=None, buffer=['Just one line.']))
+        apply_cursor_position(0, 0, vim=vim)
+
+    def test_noop_if_given_line_is_outside_buffer(self):
+        vim = mock_vim_with_cursor((1, 0), contents=['Just one line.'])
+
+        apply_cursor_position(1000000, 0, vim=vim)
+
+        self.assertEqual(vim.current.window.cursor, (1, 0))
+
+    def test_noop_if_given_column_is_outside_buffer(self):
+        vim = mock_vim_with_cursor((1, 0), contents=['Just one line.'])
+
+        apply_cursor_position(0, 1000000, vim=vim)
+
+        self.assertEqual(vim.current.window.cursor, (1, 0))
+
+    def test_sets_cursor_to_one_based_valid_line(self):
+        vim = mock_vim_with_cursor(
+            (1, 0),
+            contents=['This is line one.', 'This is line two']
+        )
+
+        apply_cursor_position(0, 10, vim=vim)
+
+        self.assertEqual(vim.current.window.cursor[0], 1)
+
+    def test_sets_cursor_to_zero_based_valid_column(self):
+        vim = mock_vim_with_cursor(
+            (1, 0),
+            contents=['This is line one.', 'This is line two']
+        )
+
+        apply_cursor_position(0, 10, vim=vim)
+
+        self.assertEqual(vim.current.window.cursor[1], 10)
