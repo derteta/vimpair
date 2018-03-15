@@ -6,6 +6,7 @@ python_path = os.path.abspath(os.path.join(script_path, 'python'))
 if not python_path in sys.path:
   sys.path.append(python_path)
 
+from protocol import generate_contents_update_message
 from vim_interface import (
   apply_contents_update,
   apply_cursor_position,
@@ -16,8 +17,8 @@ from vim_interface import (
 connections = []
 
 def send_contents_update():
-  content = get_current_contents(vim=vim)
-  message = 'VIMPAIR_FULL_UPDATE|%d|%s' % (len(content), content)
+  contents = get_current_contents(vim=vim)
+  message = generate_contents_update_message(contents)
   for connection in connections:
     connection.send_message(message)
 
