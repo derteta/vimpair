@@ -6,7 +6,10 @@ python_path = os.path.abspath(os.path.join(script_path, 'python'))
 if not python_path in sys.path:
   sys.path.append(python_path)
 
-from protocol import generate_contents_update_message
+from protocol import (
+  generate_contents_update_message,
+  generate_cursor_position_message,
+)
 from vim_interface import (
   apply_contents_update,
   apply_cursor_position,
@@ -23,7 +26,8 @@ def send_contents_update():
     connection.send_message(message)
 
 def send_cursor_position():
-  message = 'VIMPAIR_CURSOR_POSITION|%d|%d' % get_cursor_position(vim=vim)
+  line, column = get_cursor_position(vim=vim)
+  message = generate_cursor_position_message(line, column)
   for connection in connections:
     connection.send_message(message)
 
