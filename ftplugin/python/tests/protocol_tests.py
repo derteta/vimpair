@@ -1,9 +1,11 @@
 from unittest import TestCase
+from mock import Mock
 
 from ..protocol import (
     FULL_UPDATE_PREFIX,
     generate_contents_update_message,
     generate_cursor_position_message,
+    process_message,
 )
 
 
@@ -81,3 +83,130 @@ class GenerateCursorPositionMessageTests(TestCase):
         message = generate_cursor_position_message(0, 111)
 
         self.assertTrue(message.endswith('|0|111'), message)
+
+
+class ProcessMessageFullUpdateTests(TestCase):
+
+    def test_calls_update_contents_for_update_message(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|14|Some Contents.'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_called()
+
+    def test_calls_update_contents_with_long_message_contents(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|14|Some Contents.'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_called_with('Some Contents.')
+
+    def test_calls_update_contents_with_short_message_contents(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|5|Short'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_called_with('Short')
+
+    def test_calls_update_contents_with_contents_including_linebreaks(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|14|Some\nContents.'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_called_with('Some\nContents.')
+
+    def test_does_not_call_update_contents_for_empty_message(self):
+        update_contents = Mock()
+
+        process_message('', update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_if_it_is_not_callable(self):
+        message = 'VIMPAIR_FULL_UPDATE|5|Short'
+
+        process_message(message, 'update_contents', None)
+
+    def test_does_not_call_update_contents_for_message_with_wrong_length(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|123456|Short'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_nonnumeric_length(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|five|Short'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_empty_length(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE||Short'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_empty_content(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|0|'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_missing_first_marker(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE14|Some Contents.'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_missing_second_marker(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|14Some Contents.'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_without_markers(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_FULL_UPDATE14Some Contents.'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_incomplete_prefix(self):
+        update_contents = Mock()
+        message = 'IMPAIR_FULL_UPDATE|14|Some Contents.'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_incorrect_prefix(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_DULL_UPDATE|14|Some Contents.'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_another_valid_prefix(self):
+        update_contents = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|1|1'
+
+        process_message(message, update_contents, None)
+
+        update_contents.assert_not_called()
