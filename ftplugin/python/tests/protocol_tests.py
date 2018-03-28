@@ -210,3 +210,144 @@ class ProcessMessageFullUpdateTests(TestCase):
         process_message(message, update_contents, None)
 
         update_contents.assert_not_called()
+
+
+class ProcessMessageCursorPositionTests(TestCase):
+
+    def test_calls_apply_cursor_position_for_cursor_position_message(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|1|1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_called()
+
+    def test_calls_apply_cursor_position_with_provided_cursor_position(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|22|33'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_called_with(22, 33)
+
+    def test_does_not_call_apply_cursor_position_for_empty_message(self):
+        apply_cursor_position = Mock()
+
+        process_message('', None, apply_cursor_position)
+
+    def test_does_not_call_apply_cursor_position_if_it_is_not_callable(self):
+        message = 'VIMPAIR_CURSOR_POSITION|22|33'
+
+        process_message(message, None, 'apply_cursor_position')
+
+    def test_does_not_call_update_contents_for_message_with_nonnumeric_line(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|one|1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_nonnumeric_column(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|1|one'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_empty_line(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION||1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_update_contents_for_message_with_empty_column(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|1|'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_missing_first_marker(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION1|1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_missing_second_marker(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|11'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_missing_no_markers(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION11'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_incomplete_prefix(self):
+        apply_cursor_position = Mock()
+        message = 'IMPAIR_CURSOR_POSITION|1|1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_incorrect_prefix(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_TURSOR_POSITION|1|1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_negative_line(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|-1|1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_negative_column(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|1|-1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_float_line_number(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|1.0|1'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_float_column_number(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_CURSOR_POSITION|1|1.0'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()
+
+    def test_does_not_call_apply_cursor_position_for_message_with_another_valid_prefix(self):
+        apply_cursor_position = Mock()
+        message = 'VIMPAIR_FULL_UPDATE|5|Short'
+
+        process_message(message, None, apply_cursor_position)
+
+        apply_cursor_position.assert_not_called()

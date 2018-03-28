@@ -2,6 +2,7 @@ import re
 
 
 FULL_UPDATE_PREFIX = 'VIMPAIR_FULL_UPDATE'
+CURSOR_POSITION_PREFIX = 'VIMPAIR_CURSOR_POSITION'
 
 
 _noop = lambda *a, **k: None
@@ -15,19 +16,27 @@ def generate_contents_update_message(contents):
 def generate_cursor_position_message(line, column):
     line = max(0, line or 0)
     column = max(0, column or 0)
-    return 'VIMPAIR_CURSOR_POSITION|%d|%d' % (line, column)
+    return '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
 
-def process_message(message, update_contents, _):
+def process_message(message, update_contents, apply_cursor_position):
+
+    def _contents_update(groups):
+        length = int(groups[0])
+        contents = groups[1]
+        if length and length == len(contents):
+            _ensure_callable(update_contents)(contents)
+
+    def _cursor_position(groups):
+        line = int(groups[0])
+        column = int(groups[1])
+        _ensure_callable(apply_cursor_position)(line, column)
+
     if message:
-        matches = re.match(
-            '%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX,
-            message,
-            re.DOTALL,
-        )
-        if matches:
-            update_contents = _ensure_callable(update_contents)
-            groups = matches.groups()
-            length = int(groups[0])
-            contents = groups[1]
-            if length and length == len(contents):
-                update_contents(contents)
+        for regexp, call in (
+            ('%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX, _contents_update),
+            ('%s\|(\d+)\|(\d+)$' % CURSOR_POSITION_PREFIX, _cursor_position),
+        ):
+            matches = re.match(regexp, message, re.DOTALL)
+            if matches:
+                call(matches.groups())
+                return
