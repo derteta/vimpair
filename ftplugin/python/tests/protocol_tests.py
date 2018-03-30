@@ -1,7 +1,9 @@
 from unittest import TestCase
 from mock import Mock
+from ddt import data, ddt, unpack
 
 from ..protocol import (
+    CURSOR_POSITION_PREFIX,
     FULL_UPDATE_PREFIX,
     generate_contents_update_message,
     generate_cursor_position_message,
@@ -85,268 +87,100 @@ class GenerateCursorPositionMessageTests(TestCase):
         self.assertTrue(message.endswith('|0|111'), message)
 
 
+@ddt
 class ProcessMessageFullUpdateTests(TestCase):
 
     def test_calls_update_contents_for_update_message(self):
         update_contents = Mock()
+        # not checking for FULL_UPDATE_PREFIX to prevent false positives
         message = 'VIMPAIR_FULL_UPDATE|14|Some Contents.'
 
         process_message(message, update_contents, None)
 
         update_contents.assert_called()
 
-    def test_calls_update_contents_with_long_message_contents(self):
+    @data(
+        ('long_contents',            '|14|', 'Some Contents.'),
+        ('short_contents',           '|5|',  'Short'),
+        ('contents_with_linebreaks', '|14|', 'Some\nContents.'),
+    )
+    @unpack
+    def test_calls_update_contents(self, _name, length, contents):
         update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE|14|Some Contents.'
+        message = FULL_UPDATE_PREFIX + length + contents
 
         process_message(message, update_contents, None)
 
-        update_contents.assert_called_with('Some Contents.')
-
-    def test_calls_update_contents_with_short_message_contents(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE|5|Short'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_called_with('Short')
-
-    def test_calls_update_contents_with_contents_including_linebreaks(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE|14|Some\nContents.'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_called_with('Some\nContents.')
-
-    def test_does_not_call_update_contents_for_empty_message(self):
-        update_contents = Mock()
-
-        process_message('', update_contents, None)
-
-        update_contents.assert_not_called()
+        update_contents.assert_called_with(contents)
 
     def test_does_not_call_update_contents_if_it_is_not_callable(self):
-        message = 'VIMPAIR_FULL_UPDATE|5|Short'
+        message = FULL_UPDATE_PREFIX + '|5|Short'
 
         process_message(message, 'update_contents', None)
 
-    def test_does_not_call_update_contents_for_message_with_wrong_length(self):
+    @data(
+        ('empty_message',      ''),
+        ('wrong_length',       FULL_UPDATE_PREFIX + '|123456|Short'),
+        ('nonnumeric_length',  FULL_UPDATE_PREFIX + '|five|Short'),
+        ('empty_length',       FULL_UPDATE_PREFIX + '||Short'),
+        ('empty_contents',     FULL_UPDATE_PREFIX + '|0|'),
+        ('missing_1st_marker', FULL_UPDATE_PREFIX + '|Some Contents.'),
+        ('missing_2nd_marker', FULL_UPDATE_PREFIX + '|14Some Contents.'),
+        ('no_markers',         FULL_UPDATE_PREFIX + 'Contents.'),
+        ('incomplete_prefix',  'IMPAIR_FULL_UPDATE|14|Some Contents.'),
+        ('incorrect_prefix',   'VIMPAIR_DULL_UPDATE|14|Some Contents.'),
+        ('other_valid_prefix', CURSOR_POSITION_PREFIX + '|1|1'),
+    )
+    @unpack
+    def test_does_not_call_update_contents(self, _name, message):
         update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE|123456|Short'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_nonnumeric_length(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE|five|Short'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_empty_length(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE||Short'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_empty_content(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE|0|'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_missing_first_marker(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE14|Some Contents.'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_missing_second_marker(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE|14Some Contents.'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_without_markers(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_FULL_UPDATE14Some Contents.'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_incomplete_prefix(self):
-        update_contents = Mock()
-        message = 'IMPAIR_FULL_UPDATE|14|Some Contents.'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_incorrect_prefix(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_DULL_UPDATE|14|Some Contents.'
-
-        process_message(message, update_contents, None)
-
-        update_contents.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_another_valid_prefix(self):
-        update_contents = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|1|1'
 
         process_message(message, update_contents, None)
 
         update_contents.assert_not_called()
 
 
+@ddt
 class ProcessMessageCursorPositionTests(TestCase):
 
-    def test_calls_apply_cursor_position_for_cursor_position_message(self):
+    @data(
+        ('single_digit_coordinates', CURSOR_POSITION_PREFIX + '|1|1',   (1,1)),
+        ('double_digit_coordinates', CURSOR_POSITION_PREFIX + '|22|33', (22,33)),
+    )
+    @unpack
+    def test_calls_apply_cursor_position(self, _name, message, expected_coordinates):
         apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|1|1'
 
         process_message(message, None, apply_cursor_position)
 
-        apply_cursor_position.assert_called()
-
-    def test_calls_apply_cursor_position_with_provided_cursor_position(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|22|33'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_called_with(22, 33)
-
-    def test_does_not_call_apply_cursor_position_for_empty_message(self):
-        apply_cursor_position = Mock()
-
-        process_message('', None, apply_cursor_position)
+        apply_cursor_position.assert_called_with(*expected_coordinates)
 
     def test_does_not_call_apply_cursor_position_if_it_is_not_callable(self):
+        # not checking for CURSOR_POSITION_PREFIX to prevent false positives
         message = 'VIMPAIR_CURSOR_POSITION|22|33'
 
         process_message(message, None, 'apply_cursor_position')
 
-    def test_does_not_call_update_contents_for_message_with_nonnumeric_line(self):
+    @data(
+        ('empty_message',  ''),
+        ('nonnumeric_line',     CURSOR_POSITION_PREFIX + '|one|1'),
+        ('nonnumeric_column',   CURSOR_POSITION_PREFIX + '|1|one'),
+        ('empty_line',          CURSOR_POSITION_PREFIX + '||1'),
+        ('empty_column',        CURSOR_POSITION_PREFIX + '|1|'),
+        ('missing_1st_marker',  CURSOR_POSITION_PREFIX + '|1'),
+        ('missing_2nd_marker',  CURSOR_POSITION_PREFIX + '|11'),
+        ('no_markers',          CURSOR_POSITION_PREFIX + '11'),
+        ('incomplete_prefix',   'IMPAIR_CURSOR_POSITION|1|1'),
+        ('incorrect_prefix',    'VIMPAIR_TURSOR_POSITION|1|1'),
+        ('negative_line',       CURSOR_POSITION_PREFIX + '|-1|1'),
+        ('negative_column',     CURSOR_POSITION_PREFIX + '|1|-1'),
+        ('float_line_number',   CURSOR_POSITION_PREFIX + '|1.0|1'),
+        ('float_column_number', CURSOR_POSITION_PREFIX + '|1|1.0'),
+        ('other_valid_prefix',  FULL_UPDATE_PREFIX + '|14|Some Contents.'),
+    )
+    @unpack
+    def test_does_not_call_apply_cursor_position(self, _name, message):
         apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|one|1'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_nonnumeric_column(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|1|one'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_empty_line(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION||1'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_update_contents_for_message_with_empty_column(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|1|'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_missing_first_marker(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION1|1'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_missing_second_marker(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|11'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_missing_no_markers(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION11'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_incomplete_prefix(self):
-        apply_cursor_position = Mock()
-        message = 'IMPAIR_CURSOR_POSITION|1|1'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_incorrect_prefix(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_TURSOR_POSITION|1|1'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_negative_line(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|-1|1'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_negative_column(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|1|-1'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_float_line_number(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|1.0|1'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_float_column_number(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_CURSOR_POSITION|1|1.0'
-
-        process_message(message, None, apply_cursor_position)
-
-        apply_cursor_position.assert_not_called()
-
-    def test_does_not_call_apply_cursor_position_for_message_with_another_valid_prefix(self):
-        apply_cursor_position = Mock()
-        message = 'VIMPAIR_FULL_UPDATE|5|Short'
 
         process_message(message, None, apply_cursor_position)
 
