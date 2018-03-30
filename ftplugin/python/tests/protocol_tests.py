@@ -1,7 +1,8 @@
 from unittest import TestCase
 from mock import Mock
-from ddt import data, ddt, unpack
+from ddt import data, ddt
 
+from .util import TestContext as TC
 from ..protocol import (
     CURSOR_POSITION_PREFIX,
     FULL_UPDATE_PREFIX,
@@ -100,18 +101,17 @@ class ProcessMessageFullUpdateTests(TestCase):
         update_contents.assert_called()
 
     @data(
-        ('long_contents',            '|14|', 'Some Contents.'),
-        ('short_contents',           '|5|',  'Short'),
-        ('contents_with_linebreaks', '|14|', 'Some\nContents.'),
+        TC('long_contents',            length='|14|', contents='Some Contents.'),
+        TC('short_contents',           length='|5|',  contents='Short'),
+        TC('contents_with_linebreaks', length='|14|', contents='Some\nContents.'),
     )
-    @unpack
-    def test_calls_update_contents(self, _name, length, contents):
+    def test_calls_update_contents(self, context):
         update_contents = Mock()
-        message = FULL_UPDATE_PREFIX + length + contents
+        message = FULL_UPDATE_PREFIX + context.length + context.contents
 
         process_message(message, update_contents, None)
 
-        update_contents.assert_called_with(contents)
+        update_contents.assert_called_with(context.contents)
 
     def test_does_not_call_update_contents_if_it_is_not_callable(self):
         message = FULL_UPDATE_PREFIX + '|5|Short'
@@ -119,23 +119,22 @@ class ProcessMessageFullUpdateTests(TestCase):
         process_message(message, 'update_contents', None)
 
     @data(
-        ('empty_message',      ''),
-        ('wrong_length',       FULL_UPDATE_PREFIX + '|123456|Short'),
-        ('nonnumeric_length',  FULL_UPDATE_PREFIX + '|five|Short'),
-        ('empty_length',       FULL_UPDATE_PREFIX + '||Short'),
-        ('empty_contents',     FULL_UPDATE_PREFIX + '|0|'),
-        ('missing_1st_marker', FULL_UPDATE_PREFIX + '|Some Contents.'),
-        ('missing_2nd_marker', FULL_UPDATE_PREFIX + '|14Some Contents.'),
-        ('no_markers',         FULL_UPDATE_PREFIX + 'Contents.'),
-        ('incomplete_prefix',  'IMPAIR_FULL_UPDATE|14|Some Contents.'),
-        ('incorrect_prefix',   'VIMPAIR_DULL_UPDATE|14|Some Contents.'),
-        ('other_valid_prefix', CURSOR_POSITION_PREFIX + '|1|1'),
+        TC('empty_message',      message=''),
+        TC('wrong_length',       message=FULL_UPDATE_PREFIX + '|123456|Short'),
+        TC('nonnumeric_length',  message=FULL_UPDATE_PREFIX + '|five|Short'),
+        TC('empty_length',       message=FULL_UPDATE_PREFIX + '||Short'),
+        TC('empty_contents',     message=FULL_UPDATE_PREFIX + '|0|'),
+        TC('missing_1st_marker', message=FULL_UPDATE_PREFIX + '|Some Contents.'),
+        TC('missing_2nd_marker', message=FULL_UPDATE_PREFIX + '|14Some Contents.'),
+        TC('no_markers',         message=FULL_UPDATE_PREFIX + 'Contents.'),
+        TC('incomplete_prefix',  message='IMPAIR_FULL_UPDATE|14|Some Contents.'),
+        TC('incorrect_prefix',   message='VIMPAIR_DULL_UPDATE|14|Some Contents.'),
+        TC('other_valid_prefix', message=CURSOR_POSITION_PREFIX + '|1|1'),
     )
-    @unpack
-    def test_does_not_call_update_contents(self, _name, message):
+    def test_does_not_call_update_contents(self, context):
         update_contents = Mock()
 
-        process_message(message, update_contents, None)
+        process_message(context.message, update_contents, None)
 
         update_contents.assert_not_called()
 
@@ -144,16 +143,23 @@ class ProcessMessageFullUpdateTests(TestCase):
 class ProcessMessageCursorPositionTests(TestCase):
 
     @data(
-        ('single_digit_coordinates', CURSOR_POSITION_PREFIX + '|1|1',   (1,1)),
-        ('double_digit_coordinates', CURSOR_POSITION_PREFIX + '|22|33', (22,33)),
+        TC(
+            'single_digit_coordinates',
+            message=CURSOR_POSITION_PREFIX + '|1|1',
+            expected_coordinates=(1,1)
+        ),
+        TC(
+            'double_digit_coordinates',
+            message=CURSOR_POSITION_PREFIX + '|22|33',
+            expected_coordinates=(22,33)
+        ),
     )
-    @unpack
-    def test_calls_apply_cursor_position(self, _name, message, expected_coordinates):
+    def test_calls_apply_cursor_position(self, context):
         apply_cursor_position = Mock()
 
-        process_message(message, None, apply_cursor_position)
+        process_message(context.message, None, apply_cursor_position)
 
-        apply_cursor_position.assert_called_with(*expected_coordinates)
+        apply_cursor_position.assert_called_with(*context.expected_coordinates)
 
     def test_does_not_call_apply_cursor_position_if_it_is_not_callable(self):
         # not checking for CURSOR_POSITION_PREFIX to prevent false positives
@@ -162,26 +168,25 @@ class ProcessMessageCursorPositionTests(TestCase):
         process_message(message, None, 'apply_cursor_position')
 
     @data(
-        ('empty_message',  ''),
-        ('nonnumeric_line',     CURSOR_POSITION_PREFIX + '|one|1'),
-        ('nonnumeric_column',   CURSOR_POSITION_PREFIX + '|1|one'),
-        ('empty_line',          CURSOR_POSITION_PREFIX + '||1'),
-        ('empty_column',        CURSOR_POSITION_PREFIX + '|1|'),
-        ('missing_1st_marker',  CURSOR_POSITION_PREFIX + '|1'),
-        ('missing_2nd_marker',  CURSOR_POSITION_PREFIX + '|11'),
-        ('no_markers',          CURSOR_POSITION_PREFIX + '11'),
-        ('incomplete_prefix',   'IMPAIR_CURSOR_POSITION|1|1'),
-        ('incorrect_prefix',    'VIMPAIR_TURSOR_POSITION|1|1'),
-        ('negative_line',       CURSOR_POSITION_PREFIX + '|-1|1'),
-        ('negative_column',     CURSOR_POSITION_PREFIX + '|1|-1'),
-        ('float_line_number',   CURSOR_POSITION_PREFIX + '|1.0|1'),
-        ('float_column_number', CURSOR_POSITION_PREFIX + '|1|1.0'),
-        ('other_valid_prefix',  FULL_UPDATE_PREFIX + '|14|Some Contents.'),
+        TC('empty_message',       message=''),
+        TC('nonnumeric_line',     message=CURSOR_POSITION_PREFIX + '|one|1'),
+        TC('nonnumeric_column',   message=CURSOR_POSITION_PREFIX + '|1|one'),
+        TC('empty_line',          message=CURSOR_POSITION_PREFIX + '||1'),
+        TC('empty_column',        message=CURSOR_POSITION_PREFIX + '|1|'),
+        TC('missing_1st_marker',  message=CURSOR_POSITION_PREFIX + '|1'),
+        TC('missing_2nd_marker',  message=CURSOR_POSITION_PREFIX + '|11'),
+        TC('no_markers',          message=CURSOR_POSITION_PREFIX + '11'),
+        TC('incomplete_prefix',   message='IMPAIR_CURSOR_POSITION|1|1'),
+        TC('incorrect_prefix',    message='VIMPAIR_TURSOR_POSITION|1|1'),
+        TC('negative_line',       message=CURSOR_POSITION_PREFIX + '|-1|1'),
+        TC('negative_column',     message=CURSOR_POSITION_PREFIX + '|1|-1'),
+        TC('float_line_number',   message=CURSOR_POSITION_PREFIX + '|1.0|1'),
+        TC('float_column_number', message=CURSOR_POSITION_PREFIX + '|1|1.0'),
+        TC('other_valid_prefix',  message=FULL_UPDATE_PREFIX + '|14|Some Contents.'),
     )
-    @unpack
-    def test_does_not_call_apply_cursor_position(self, _name, message):
+    def test_does_not_call_apply_cursor_position(self, context):
         apply_cursor_position = Mock()
 
-        process_message(message, None, apply_cursor_position)
+        process_message(context.message, None, apply_cursor_position)
 
         apply_cursor_position.assert_not_called()
