@@ -8,10 +8,10 @@ CURSOR_POSITION_PREFIX = 'VIMPAIR_CURSOR_POSITION'
 _noop = lambda *a, **k: None
 _ensure_callable = lambda call: call if callable(call) else _noop
 
-def generate_contents_update_message(contents):
-    return '%s|%d|%s' % (FULL_UPDATE_PREFIX, len(contents), contents) \
+def generate_contents_update_messages(contents):
+    return ['%s|%d|%s' % (FULL_UPDATE_PREFIX, len(contents), contents)] \
         if contents \
-        else ''
+        else []
 
 def generate_cursor_position_message(line, column):
     line = max(0, line or 0)

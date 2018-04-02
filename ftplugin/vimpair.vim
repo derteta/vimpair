@@ -9,7 +9,7 @@ if not python_path in sys.path:
 from functools import partial
 
 from protocol import (
-  generate_contents_update_message,
+  generate_contents_update_messages,
   generate_cursor_position_message,
   process_message,
 )
@@ -24,9 +24,10 @@ connections = []
 
 def send_contents_update():
   contents = get_current_contents(vim=vim)
-  message = generate_contents_update_message(contents)
+  messages = generate_contents_update_messages(contents)
   for connection in connections:
-    connection.send_message(message)
+    for message in messages:
+      connection.send_message(message)
 
 def send_cursor_position():
   line, column = get_cursor_position(vim=vim)
