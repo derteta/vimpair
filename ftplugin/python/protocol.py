@@ -23,7 +23,7 @@ def process_message(message, update_contents, apply_cursor_position):
     def _contents_update(groups):
         length = int(groups[0])
         contents = groups[1]
-        if length and length == len(contents):
+        if length == len(contents):
             _ensure_callable(update_contents)(contents)
 
     def _cursor_position(groups):

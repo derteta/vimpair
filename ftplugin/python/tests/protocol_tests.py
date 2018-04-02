@@ -101,6 +101,7 @@ class ProcessMessageFullUpdateTests(TestCase):
         update_contents.assert_called()
 
     @data(
+        TC('empty_contents',           length='|0|',  contents=''),
         TC('long_contents',            length='|14|', contents='Some Contents.'),
         TC('short_contents',           length='|5|',  contents='Short'),
         TC('contents_with_linebreaks', length='|14|', contents='Some\nContents.'),
@@ -123,7 +124,6 @@ class ProcessMessageFullUpdateTests(TestCase):
         TC('wrong_length',       message=FULL_UPDATE_PREFIX + '|123456|Short'),
         TC('nonnumeric_length',  message=FULL_UPDATE_PREFIX + '|five|Short'),
         TC('empty_length',       message=FULL_UPDATE_PREFIX + '||Short'),
-        TC('empty_contents',     message=FULL_UPDATE_PREFIX + '|0|'),
         TC('missing_1st_marker', message=FULL_UPDATE_PREFIX + '|Some Contents.'),
         TC('missing_2nd_marker', message=FULL_UPDATE_PREFIX + '|14Some Contents.'),
         TC('no_markers',         message=FULL_UPDATE_PREFIX + 'Contents.'),
