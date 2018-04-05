@@ -9,6 +9,9 @@ from ..protocol import (
     generate_contents_update_messages,
     generate_cursor_position_message,
     process_message,
+    UPDATE_START_PREFIX,
+    UPDATE_PART_PREFIX,
+    UPDATE_END_PREFIX,
 )
 
 
@@ -16,6 +19,7 @@ def first(iterable):
     return iterable[0]
 
 
+@ddt
 class GenerateContentsUpdateMessageTests(TestCase):
 
     def test_returns_no_messages_if_contents_is_none(self):
@@ -52,6 +56,104 @@ class GenerateContentsUpdateMessageTests(TestCase):
         self.assertTrue(
             message[length_offset:].startswith('|Some contents'),
             message
+        )
+
+    @data(
+        TC('two_parts',       length=1024,  expected_num_parts=2),
+        TC('three_parts',     length=2048,  expected_num_parts=3),
+        # 40960 is the 1st case with 'num_parts != 1 + len(contents) / 1024'
+        TC('fourtytwo_parts', length=40960, expected_num_parts=42),
+    )
+    def test_splits_long_content_into_several_messages(self, context):
+        messages = generate_contents_update_messages('#' * context.length)
+
+        actual_num_parts = len(messages)
+        self.assertEqual(
+            actual_num_parts,
+            context.expected_num_parts,
+            actual_num_parts
+        )
+
+    @data(
+        TC('start', index=0,  expected_prefix='VIMPAIR_CONTENTS_START'),
+        TC('part',  index=1,  expected_prefix='VIMPAIR_CONTENTS_PART'),
+        TC('end',   index=-1, expected_prefix='VIMPAIR_CONTENTS_END'),
+    )
+    def test_multiple_messages_start_with_special_prefixes(self, context):
+        messages = generate_contents_update_messages('#' * 2048)
+
+        message = messages[context.index]
+        self.assertTrue(message.startswith(context.expected_prefix), message)
+
+    @data(
+        TC(
+            'start',
+            index=0,
+            length_offset=1 + len(UPDATE_START_PREFIX),
+            expected_length='997|'
+        ),
+        TC(
+            'part',
+            index=1,
+            length_offset=1 + len(UPDATE_PART_PREFIX),
+            expected_length='998|'
+        ),
+        TC(
+            'end',
+            index=-1,
+            length_offset=1 + len(UPDATE_END_PREFIX),
+            expected_length='55|'
+        ),
+    )
+    def test_multiple_messages_have_the_correct_length_of_the_contained_part(
+        self,
+        context
+    ):
+        messages = generate_contents_update_messages('0123456789' * 205)
+
+        message = messages[context.index][context.length_offset:]
+        self.assertTrue(message.startswith(context.expected_length), message)
+
+    @data(
+        TC('start', index=0,  expected_length=1024),
+        TC('part',  index=1,  expected_length=1024),
+        TC('end',   index=-1, expected_length=77),
+    )
+    def test_multiple_messages_have_the_expected_overall_length(self, context):
+        messages = generate_contents_update_messages('#' * 2048)
+
+        message = messages[context.index]
+        self.assertEqual(len(message), context.expected_length, message)
+
+    @data(
+        TC(
+            'start',
+            index=0,
+            length_offset=5 + len(UPDATE_START_PREFIX),
+            expected_start_and_end=('0','6'),
+        ),
+        TC(
+            'part',
+            index=1,
+            length_offset=5 + len(UPDATE_PART_PREFIX),
+            expected_start_and_end=('7','4'),
+        ),
+        TC(
+            'end',
+            index=-1,
+            length_offset=4 + len(UPDATE_END_PREFIX),
+            expected_start_and_end=('5','9'),
+        ),
+    )
+    def test_multiple_messages_have_the_expected_contents(self, context):
+        messages = generate_contents_update_messages('0123456789' * 201)
+
+        message = messages[context.index]
+        actual_start_and_end = (message[context.length_offset], message[-1])
+        self.assertEqual(
+            actual_start_and_end,
+            context.expected_start_and_end,
+            actual_start_and_end
         )
 
 
