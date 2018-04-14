@@ -296,3 +296,113 @@ class ProcessMessageCursorPositionTests(TestCase):
         process_message(context.message, None, apply_cursor_position)
 
         apply_cursor_position.assert_not_called()
+
+
+@ddt
+class ProcessMessageSplitContentsTests(TestCase):
+
+    def test_does_not_call_update_contents_when_receiving_only_contents_start(self):
+        update_contents = Mock()
+
+        process_message(
+            UPDATE_START_PREFIX + '|15|First part of a',
+            update_contents,
+            None,
+        )
+
+        update_contents.assert_not_called()
+
+    def test_does_not_call_update_contents_when_receiving_only_contents_end(self):
+        update_contents = Mock()
+
+        process_message(
+            UPDATE_END_PREFIX + '|16| longer message.',
+            update_contents,
+            None,
+        )
+
+        update_contents.assert_not_called()
+
+    def test_calls_update_contents_when_receiving_contents_start_and_end(self):
+        update_contents = Mock()
+
+        for message in (
+            UPDATE_START_PREFIX + '|15|First part of a',
+            UPDATE_END_PREFIX + '|16| longer message.',
+        ):
+            process_message(message, update_contents, None,)
+
+        update_contents.assert_called_with('First part of a longer message.')
+
+    def test_calls_update_contents_once_when_receiving_matching_end(self):
+        update_contents = Mock()
+
+        for message in (
+            UPDATE_START_PREFIX + '|15|First part of a',
+            UPDATE_END_PREFIX + '|16| longer message.',
+            UPDATE_END_PREFIX + '|16| longer message.',
+        ):
+            process_message(message, update_contents, None,)
+
+        update_contents.assert_called_once_with(
+            'First part of a longer message.'
+        )
+
+    def test_calls_update_contents_once_for_matching_start_and_end(self):
+        update_contents = Mock()
+
+        for message in (
+            UPDATE_START_PREFIX + '|15|Not a part of a',
+            UPDATE_START_PREFIX + '|15|First part of a',
+            UPDATE_END_PREFIX + '|16| longer message.',
+        ):
+            process_message(message, update_contents, None,)
+
+        update_contents.assert_called_once_with(
+            'First part of a longer message.'
+        )
+
+    def test_parts_between_start_and_end_can_extend_message(self):
+        update_contents = Mock()
+
+        for message in (
+            UPDATE_START_PREFIX + '|2|1 ',
+            UPDATE_PART_PREFIX + '|2|2 ',
+            UPDATE_END_PREFIX + '|1|3',
+        ):
+            process_message(message, update_contents, None,)
+
+        update_contents.assert_called_once_with('1 2 3')
+
+    def test_does_not_call_update_contents_for_part_and_end_without_start(self):
+        update_contents = Mock()
+
+        for message in (
+            UPDATE_PART_PREFIX + '|2|2 ',
+            UPDATE_END_PREFIX + '|1|3',
+        ):
+            process_message(message, update_contents, None,)
+
+        update_contents.assert_not_called()
+
+    @data(
+        TC('full_update', interrupting_message=FULL_UPDATE_PREFIX + '|5|Short'),
+        TC('cursor',      interrupting_message=CURSOR_POSITION_PREFIX + '|1|1'),
+        TC('malformed',   interrupting_message='%^' + UPDATE_PART_PREFIX + '@'),
+    )
+    def test_does_not_call_update_contents_if_other_message_received_before_end(
+        self,
+        context,
+    ):
+        update_contents = Mock()
+        for message in (
+            UPDATE_START_PREFIX + '|2|1 ',
+            UPDATE_PART_PREFIX + '|2|2 ',
+            context.interrupting_message,
+        ):
+            process_message(message, update_contents, None,)
+        update_contents.reset_mock()
+
+        process_message(UPDATE_END_PREFIX + '|1|3', update_contents, None,)
+
+        update_contents.assert_not_called()

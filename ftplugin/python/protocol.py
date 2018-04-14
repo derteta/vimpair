@@ -62,25 +62,57 @@ def generate_cursor_position_message(line, column):
     column = max(0, column or 0)
     return '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
 
-def process_message(message, update_contents, apply_cursor_position):
+def process_message(
+    message,
+    update_contents,
+    apply_cursor_position,
+    pending_update=[None],
+):
 
     def _contents_update(groups):
         length = int(groups[0])
         contents = groups[1]
         if length == len(contents):
             _ensure_callable(update_contents)(contents)
+        pending_update[0] = None
+
+    def _contents_start(groups):
+        length = int(groups[0])
+        contents = groups[1]
+        if length == len(contents):
+            pending_update[0] = contents
+
+    def _contents_part(groups):
+        length = int(groups[0])
+        contents = groups[1]
+        if pending_update[0] and length == len(contents):
+            pending_update[0] += contents
+
+    def _contents_end(groups):
+        length = int(groups[0])
+        contents = groups[1]
+        if pending_update[0] and length == len(contents):
+            _ensure_callable(update_contents)(
+                pending_update[0] + contents
+            )
+        pending_update[0] = None
 
     def _cursor_position(groups):
         line = int(groups[0])
         column = int(groups[1])
         _ensure_callable(apply_cursor_position)(line, column)
+        pending_update[0] = None
 
     if message:
         for regexp, call in (
             ('%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX, _contents_update),
+            ('%s\|(\d+)\|(.*)' % UPDATE_START_PREFIX, _contents_start),
+            ('%s\|(\d+)\|(.*)' % UPDATE_PART_PREFIX, _contents_part),
+            ('%s\|(\d+)\|(.*)' % UPDATE_END_PREFIX, _contents_end),
             ('%s\|(\d+)\|(\d+)$' % CURSOR_POSITION_PREFIX, _cursor_position),
         ):
             matches = re.match(regexp, message, re.DOTALL)
             if matches:
                 call(matches.groups())
                 return
+        pending_update[0] = None
