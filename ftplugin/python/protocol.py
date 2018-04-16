@@ -116,3 +116,60 @@ def process_message(
                 call(matches.groups())
                 return
         pending_update[0] = None
+
+
+class MessageHandler(object):
+
+    def __init__(self, update_contents=None, apply_cursor_position=None):
+        self._pending_update = None
+        self._update_contents = _ensure_callable(update_contents)
+        self._apply_cursor_position = _ensure_callable(apply_cursor_position)
+
+    def _contents_update(self, groups):
+        length = int(groups[0])
+        contents = groups[1]
+        if length == len(contents):
+            self._update_contents(contents)
+        self._pending_update = None
+
+    def _contents_start(self, groups):
+        length = int(groups[0])
+        contents = groups[1]
+        if length == len(contents):
+            self._pending_update = contents
+
+    def _contents_part(self, groups):
+        length = int(groups[0])
+        contents = groups[1]
+        if self._pending_update and length == len(contents):
+            self._pending_update += contents
+
+    def _contents_end(self, groups):
+        length = int(groups[0])
+        contents = groups[1]
+        if self._pending_update and length == len(contents):
+            self._update_contents(
+                self._pending_update + contents
+            )
+        self._pending_update = None
+
+    def _cursor_position(self, groups):
+        line = int(groups[0])
+        column = int(groups[1])
+        self._apply_cursor_position(line, column)
+        self._pending_update = None
+
+    def process(self, message):
+        if message:
+            for regexp, call in (
+                ('%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX, self._contents_update),
+                ('%s\|(\d+)\|(.*)' % UPDATE_START_PREFIX, self._contents_start),
+                ('%s\|(\d+)\|(.*)' % UPDATE_PART_PREFIX, self._contents_part),
+                ('%s\|(\d+)\|(.*)' % UPDATE_END_PREFIX, self._contents_end),
+                ('%s\|(\d+)\|(\d+)$' % CURSOR_POSITION_PREFIX, self._cursor_position),
+            ):
+                matches = re.match(regexp, message, re.DOTALL)
+                if matches:
+                    call(matches.groups())
+                    return
+            self._pending_update = None
