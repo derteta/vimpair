@@ -11,7 +11,7 @@ from functools import partial
 from protocol import (
   generate_contents_update_messages,
   generate_cursor_position_message,
-  process_message,
+  MessageHandler,
 )
 from vim_interface import (
   apply_contents_update,
@@ -21,6 +21,7 @@ from vim_interface import (
 )
 
 connections = []
+message_handler = None
 
 def send_contents_update():
   contents = get_current_contents(vim=vim)
@@ -38,11 +39,7 @@ def send_cursor_position():
 def process_messages():
   if connections:
     for message in connections[0].received_messages:
-      contents = process_message(
-        message,
-        partial(apply_contents_update, vim=vim),
-        partial(apply_cursor_position, vim=vim),
-      )
+      message_handler.process(message)
 
 EOF
 
@@ -73,10 +70,15 @@ endfunction
 
 function! VimpairClientStart()
   python connections = []
+  python message_handler = MessageHandler(
+        \  update_contents=partial(apply_contents_update, vim=vim),
+        \  apply_cursor_position=partial(apply_cursor_position, vim=vim),
+        \)
 endfunction
 
 function! VimpairClientStop()
   python connections = None
+  python message_handler = None
 endfunction
 
 function! VimpairClientUpdate()
