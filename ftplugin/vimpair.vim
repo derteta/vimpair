@@ -20,8 +20,27 @@ from vim_interface import (
   get_cursor_position,
 )
 
+
+class Connection(object):
+
+  def __init__(self, socket):
+    self._socket = socket
+    self.close = socket.close
+
+  def send_message(self, message):
+    self._socket.sendall(message)
+
+
+server_socket_factory = lambda: None
 connections = []
+server_socket = None
 message_handler = None
+
+def get_connection():
+  _, connection_socket = server_socket.accept() \
+    if server_socket \
+    else ('', None)
+  return Connection(connection_socket) if connection_socket else None
 
 def send_contents_update():
   contents = get_current_contents(vim=vim)
@@ -43,6 +62,7 @@ def process_messages():
 
 EOF
 
+
 function! VimpairServerStart()
   augroup VimpairServer
     autocmd TextChanged * python send_contents_update()
@@ -52,11 +72,26 @@ function! VimpairServerStart()
     autocmd CursorMovedI * python send_cursor_position()
   augroup END
 
-  python connections = []
+python << EOF
+connections = []
+server_socket = server_socket_factory()
+
+new_connection = get_connection()
+if new_connection:
+  connections.append(new_connection)
+EOF
 endfunction
 
 function! VimpairServerStop()
-  python connections = None
+python << EOF
+for connection in connections:
+  connection.close()
+connections = None
+
+if server_socket:
+  server_socket.close()
+  server_socket = None
+EOF
 
   augroup VimpairServer
     autocmd!
@@ -67,6 +102,7 @@ function! VimpairServerUpdate()
   python send_contents_update()
   python send_cursor_position()
 endfunction
+
 
 function! VimpairClientStart()
   python connections = []
