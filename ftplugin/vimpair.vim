@@ -36,10 +36,10 @@ connections = []
 server_socket = None
 message_handler = None
 
-def get_connection():
-  _, connection_socket = server_socket.accept() \
+def get_connection_to_client():
+  connection_socket, _  = server_socket.accept() \
     if server_socket \
-    else ('', None)
+    else (None, '')
   return Connection(connection_socket) if connection_socket else None
 
 def send_contents_update():
@@ -76,7 +76,7 @@ python << EOF
 connections = []
 server_socket = server_socket_factory()
 
-new_connection = get_connection()
+new_connection = get_connection_to_client()
 if new_connection:
   connections.append(new_connection)
 EOF

@@ -5,9 +5,11 @@ execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 function! _VPServerTest_set_up()
   execute("vnew")
+  python fake_socket = Mock()
+  python server_socket = Mock()
+  python server_socket.accept = Mock(return_value=(fake_socket, ''))
+  python server_socket_factory = lambda: server_socket
   call VimpairServerStart()
-  python fake_connection = Mock()
-  python connections.append(fake_connection)
 endfunction
 
 function! _VPServerTest_tear_down()
@@ -16,9 +18,8 @@ function! _VPServerTest_tear_down()
 endfunction
 
 function! _VPServerTest_assert_has_sent_message(expected)
-  let g:_VPServerTest_expected = a:expected
-  python fake_connection.send_message.assert_any_call(
-    \ vim.vars['_VPServerTest_expected'])
+  python fake_socket.sendall.assert_any_call(
+    \ vim.eval('a:expected'))
 endfunction
 
 
