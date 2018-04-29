@@ -30,8 +30,19 @@ class Connection(object):
   def send_message(self, message):
     self._socket.sendall(message)
 
+  @property
+  def received_messages(self):
+    messages = []
+    try:
+      while True:
+        new_message = self._socket.recv(1024)
+        messages.append(new_message)
+    finally:
+      return messages
+
 
 server_socket_factory = lambda: None
+client_socket_factory = lambda: None
 connections = []
 server_socket = None
 message_handler = None
@@ -40,6 +51,10 @@ def get_connection_to_client():
   connection_socket, _  = server_socket.accept() \
     if server_socket \
     else (None, '')
+  return Connection(connection_socket) if connection_socket else None
+
+def get_connection_to_server():
+  connection_socket = client_socket_factory()
   return Connection(connection_socket) if connection_socket else None
 
 def send_contents_update():
@@ -105,11 +120,16 @@ endfunction
 
 
 function! VimpairClientStart()
-  python connections = []
-  python message_handler = MessageHandler(
-        \  update_contents=partial(apply_contents_update, vim=vim),
-        \  apply_cursor_position=partial(apply_cursor_position, vim=vim),
-        \)
+python << EOF
+connections = []
+message_handler = MessageHandler(
+  update_contents=partial(apply_contents_update, vim=vim),
+  apply_cursor_position=partial(apply_cursor_position, vim=vim),
+)
+new_connection = get_connection_to_server()
+if new_connection:
+  connections.append(new_connection)
+EOF
 endfunction
 
 function! VimpairClientStop()
