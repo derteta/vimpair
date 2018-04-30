@@ -47,15 +47,19 @@ connections = []
 server_socket = None
 message_handler = None
 
-def get_connection_to_client():
-  connection_socket, _  = server_socket.accept() \
+def check_for_new_connection_to_client():
+  global connections
+  connection_socket, _ = server_socket.accept() \
     if server_socket \
     else (None, '')
-  return Connection(connection_socket) if connection_socket else None
+  if connection_socket:
+    connections.append(Connection(connection_socket))
 
-def get_connection_to_server():
+def check_for_connection_to_server():
+  global connections
   connection_socket = client_socket_factory()
-  return Connection(connection_socket) if connection_socket else None
+  if connection_socket:
+    connections.append(Connection(connection_socket))
 
 def send_contents_update():
   contents = get_current_contents(vim=vim)
@@ -91,9 +95,7 @@ python << EOF
 connections = []
 server_socket = server_socket_factory()
 
-new_connection = get_connection_to_client()
-if new_connection:
-  connections.append(new_connection)
+check_for_new_connection_to_client()
 EOF
 endfunction
 
@@ -126,9 +128,8 @@ message_handler = MessageHandler(
   update_contents=partial(apply_contents_update, vim=vim),
   apply_cursor_position=partial(apply_cursor_position, vim=vim),
 )
-new_connection = get_connection_to_server()
-if new_connection:
-  connections.append(new_connection)
+
+check_for_connection_to_server()
 EOF
 endfunction
 
