@@ -8,6 +8,7 @@ if not python_path in sys.path:
 
 from functools import partial
 
+from connection import Connection
 from protocol import (
   generate_contents_update_messages,
   generate_cursor_position_message,
@@ -19,26 +20,6 @@ from vim_interface import (
   get_current_contents,
   get_cursor_position,
 )
-
-
-class Connection(object):
-
-  def __init__(self, socket):
-    self._socket = socket
-    self.close = socket.close
-
-  def send_message(self, message):
-    self._socket.sendall(message)
-
-  @property
-  def received_messages(self):
-    messages = []
-    try:
-      while True:
-        new_message = self._socket.recv(1024)
-        messages.append(new_message)
-    finally:
-      return messages
 
 
 server_socket_factory = lambda: None

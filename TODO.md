@@ -7,9 +7,9 @@ Features
 
 Prioritize!
 - Port connection
-  -- How to inject fake connection for tests in the context of VimpairServerStart?
   -- Timer for client
-  -- Move Connection to new module & add unit tests
+  -- [DONE] How to inject fake connection for tests in the context of VimpairServerStart?
+  -- [DONE] Move Connection to new module & add unit tests
 - Client!
   -- Needs to set up new buffer once first update is received
 - [DONE] Move some tests to python
