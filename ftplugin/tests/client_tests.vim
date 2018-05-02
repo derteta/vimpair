@@ -24,12 +24,16 @@ assert actual == expected, actual
 EOF
 endfunction
 
+function! _VPClientTest_wait_for_timer()
+  sleep 300m
+endfunction
+
 
 function! VPClientTest_applies_received_contents_updates()
   python received_messages = ["VIMPAIR_FULL_UPDATE|16|This is line one"]
   python fake_socket.recv = lambda *a: received_messages.pop()
 
-  call VimpairClientUpdate()
+  call _VPClientTest_wait_for_timer()
 
   call _VPClientTest_assert_buffer_has_contents(["This is line one"])
 endfunction
@@ -40,7 +44,7 @@ function! VPClientTest_received_contents_updates_overwrite_existing_contents()
   python received_messages = ["VIMPAIR_FULL_UPDATE|16|This is line one"]
   python fake_socket.recv = lambda *a: received_messages.pop()
 
-  call VimpairClientUpdate()
+  call _VPClientTest_wait_for_timer()
 
   call _VPClientTest_assert_buffer_has_contents(["This is line one"])
 endfunction
@@ -51,7 +55,7 @@ function! VPClientTest_received_cursor_position_is_applied()
   python received_messages = ["VIMPAIR_CURSOR_POSITION|0|8"]
   python fake_socket.recv = lambda *a: received_messages.pop()
 
-  call VimpairClientUpdate()
+  call _VPClientTest_wait_for_timer()
 
   python assert vim.current.window.cursor == (1, 8)
 endfunction
@@ -94,7 +98,7 @@ received_messages = [
 fake_socket.recv = lambda *a: received_messages.pop()
 EOF
 
-  call VimpairClientUpdate()
+  call _VPClientTest_wait_for_timer()
 
   call _VPClientTest_assert_buffer_has_contents([
     \ "01234567890123456789012345678901234567890123456789012345678901234567" .

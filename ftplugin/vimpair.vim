@@ -62,6 +62,8 @@ def process_messages():
 
 EOF
 
+let g:_VimpairClientTimer = ""
+
 
 function! VimpairServerStart()
   augroup VimpairServer
@@ -112,13 +114,21 @@ message_handler = MessageHandler(
 
 check_for_connection_to_server()
 EOF
+  let g:_VimpairClientTimer = timer_start(
+        \ 200,
+        \ 'VimpairClientUpdate',
+        \ {'repeat': -1})
 endfunction
 
 function! VimpairClientStop()
+  if g:_VimpairClientTimer != ""
+    call timer_stop(g:_VimpairClientTimer)
+    let g:_VimpairClientTimer = ""
+  endif
   python connections = None
   python message_handler = None
 endfunction
 
-function! VimpairClientUpdate()
+function! VimpairClientUpdate(timer)
   python process_messages()
 endfunction

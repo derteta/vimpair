@@ -7,7 +7,7 @@ Features
 
 Prioritize!
 - Port connection
-  -- Timer for client
+  -- [DONE] Timer for client
   -- [DONE] How to inject fake connection for tests in the context of VimpairServerStart?
   -- [DONE] Move Connection to new module & add unit tests
 - Client!
