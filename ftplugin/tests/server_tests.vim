@@ -82,5 +82,14 @@ function! VPServerTest_sends_long_buffer_contents_in_chunks()
     \ "VIMPAIR_CONTENTS_END|25|5678901234567890123456789")
 endfunction
 
+function! VPServerTest_sends_buffer_contents_on_copy_paste()
+  execute("normal iThis is just some text")
+
+  execute("normal yyp")
+  execute("doautocmd TextChanged")
+
+  call _VPServerTest_assert_has_sent_message(
+    \ "VIMPAIR_FULL_UPDATE|45|This is just some text\nThis is just some text")
+endfunction
 
 call VPTestTools_run_tests("VPServerTest")

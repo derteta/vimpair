@@ -7,9 +7,9 @@ class Connection(object):
 
     @property
     def received_messages(self):
-        messages = []
+        message = ''
         try:
             while True:
-                messages.append(self._socket.recv(1024))
+                message += self._socket.recv(1024)
         finally:
-            return messages
+            return [message]

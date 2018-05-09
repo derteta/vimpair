@@ -33,13 +33,13 @@ class ConnectionTests(TestCase):
 
         self.assertEqual(['Some message'], self.connection.received_messages)
 
-    def test_received_messages_collect_all_messages_until_timeout(self):
+    def test_received_messages_concatenate_all_messages_until_timeout(self):
         self.socket.recv = partial(
             fake_recv,
             values=['Another message', 'Some message']
         )
 
         self.assertEqual(
-            ['Some message', 'Another message'],
+            ['Some messageAnother message'],
             self.connection.received_messages,
         )
