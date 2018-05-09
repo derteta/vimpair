@@ -210,6 +210,14 @@ class MessageHandlerFullUpdateTests(TestCase):
 
         self.update_contents.assert_called()
 
+    def test_calls_update_contents_for_multiple_updates_in_one_message(self):
+        message = FULL_UPDATE_PREFIX + '|14|Some Contents.' \
+                + FULL_UPDATE_PREFIX + '|5|Short'
+
+        self.handler.process(message)
+
+        self.update_contents.assert_called_with('Short')
+
     @data(
         TC('empty_contents',           length='|0|',  contents=''),
         TC('long_contents',            length='|14|', contents='Some Contents.'),
@@ -245,6 +253,14 @@ class MessageHandlerFullUpdateTests(TestCase):
         self.handler.process(context.message)
 
         self.update_contents.assert_not_called()
+
+    def test_calls_update_contents_if_update_is_preceded_by_cursor_position(self):
+        self.handler.process(
+            '%s|1|1%s|17|multiline\ncontent'
+            % (CURSOR_POSITION_PREFIX, FULL_UPDATE_PREFIX)
+        )
+
+        self.update_contents.assert_called_with('multiline\ncontent')
 
 
 @ddt
@@ -283,6 +299,14 @@ class MessageHandlerCursorPositionTests(TestCase):
         handler = MessageHandler(apply_cursor_position='apply_cursor_position')
         handler.process(message)
 
+    def test_calls_apply_cursor_position_for_multiple_values_in_one_message(self):
+        message = CURSOR_POSITION_PREFIX + '|0|1' \
+                + CURSOR_POSITION_PREFIX + '|0|2'
+
+        self.handler.process(message)
+
+        self.apply_cursor_position.assert_called_with(0, 2)
+
     @data(
         TC('empty_message',       message=''),
         TC('nonnumeric_line',     message=CURSOR_POSITION_PREFIX + '|one|1'),
@@ -297,7 +321,6 @@ class MessageHandlerCursorPositionTests(TestCase):
         TC('negative_line',       message=CURSOR_POSITION_PREFIX + '|-1|1'),
         TC('negative_column',     message=CURSOR_POSITION_PREFIX + '|1|-1'),
         TC('float_line_number',   message=CURSOR_POSITION_PREFIX + '|1.0|1'),
-        TC('float_column_number', message=CURSOR_POSITION_PREFIX + '|1|1.0'),
         TC('other_valid_prefix',  message=FULL_UPDATE_PREFIX + '|14|Some Contents.'),
     )
     def test_does_not_call_apply_cursor_position(self, context):
@@ -367,6 +390,16 @@ class MessageHandlerSplitContentsTests(TestCase):
 
         self.update_contents.assert_called_once_with('1 2 3')
 
+    def test_calls_update_contents_when_receiving_all_parts_in_one_message(self):
+        message = UPDATE_START_PREFIX + '|2|1 ' \
+            + UPDATE_PART_PREFIX + '|2|2 ' \
+            + UPDATE_PART_PREFIX + '|2|3 ' \
+            + UPDATE_END_PREFIX + '|1|4'
+
+        self.handler.process(message)
+
+        self.update_contents.assert_called_once_with('1 2 3 4')
+
     def test_does_not_call_update_contents_for_part_and_end_without_start(self):
         for message in (
             UPDATE_PART_PREFIX + '|2|2 ',
@@ -379,7 +412,6 @@ class MessageHandlerSplitContentsTests(TestCase):
     @data(
         TC('full_update', interrupting_message=FULL_UPDATE_PREFIX + '|5|Short'),
         TC('cursor',      interrupting_message=CURSOR_POSITION_PREFIX + '|1|1'),
-        TC('malformed',   interrupting_message='%^' + UPDATE_PART_PREFIX + '@'),
     )
     def test_does_not_call_update_contents_if_other_message_received_before_end(
         self,
