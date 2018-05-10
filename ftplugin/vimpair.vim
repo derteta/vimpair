@@ -6,9 +6,14 @@ python_path = os.path.abspath(os.path.join(script_path, 'python'))
 if not python_path in sys.path:
   sys.path.append(python_path)
 
+
 from functools import partial
 
-from connection import Connection
+from connection import (
+  Connection,
+  create_client_socket,
+  create_server_socket,
+)
 from protocol import (
   generate_contents_update_messages,
   generate_cursor_position_message,
@@ -22,8 +27,8 @@ from vim_interface import (
 )
 
 
-server_socket_factory = lambda: None
-client_socket_factory = lambda: None
+server_socket_factory = create_server_socket
+client_socket_factory = create_client_socket
 connections = []
 server_socket = None
 message_handler = None
