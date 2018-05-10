@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import re
 
 
@@ -71,76 +72,78 @@ class MessageHandler(object):
         self._update_contents = _ensure_callable(update_contents)
         self._apply_cursor_position = _ensure_callable(apply_cursor_position)
 
-    def _do_match(self, expression):
-        return re.search(expression, self._current_message, re.DOTALL)
-
     def _remove_from_message(self, string):
         self._current_message = self._current_message.replace(string, '')
 
+    @contextmanager
+    def _find_match(self, expression):
+        match = re.search(expression, self._current_message, re.DOTALL)
+        yield match.groups() if match else None
+
+    @contextmanager
+    def _find_length_and_contents(self, expression):
+        with self._find_match(expression) as groups:
+            length = int(groups[0]) if groups else None
+            contents = groups[1][:length] if groups else None
+            yield length, contents
+
     def _contents_update(self):
-        match = self._do_match('%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX)
-        if match:
-            self._pending_update = None
-            length = int(match.groups()[0])
-            contents = match.groups()[1][:length]
-            self._remove_from_message(
-                '%s|%d|%s' % (FULL_UPDATE_PREFIX, length, contents)
-            )
-            if length <= len(contents):
-                self._update_contents(contents)
-        return bool(match)
+        pattern = '%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX
+        with self._find_length_and_contents(pattern) as (length, contents):
+            if contents != None:
+                self._pending_update = None
+                self._remove_from_message(
+                    '%s|%d|%s' % (FULL_UPDATE_PREFIX, length, contents)
+                )
+                if length <= len(contents):
+                    self._update_contents(contents)
+            return contents != None
 
     def _contents_start(self):
-        match = self._do_match('%s\|(\d+)\|(.*)' % UPDATE_START_PREFIX)
-        if match:
-            group = match.groups()
-            length = int(group[0])
-            contents = group[1][:length]
-            self._remove_from_message(
-                '%s|%d|%s' % (UPDATE_START_PREFIX, length, contents)
-            )
-            self._pending_update = contents
-        return bool(match)
+        pattern = '%s\|(\d+)\|(.*)' % UPDATE_START_PREFIX
+        with self._find_length_and_contents(pattern) as (length, contents):
+            if contents != None:
+                self._remove_from_message(
+                    '%s|%d|%s' % (UPDATE_START_PREFIX, length, contents)
+                )
+                self._pending_update = contents
+            return contents != None
 
     def _contents_part(self):
-        match = self._do_match('%s\|(\d+)\|(.*)' % UPDATE_PART_PREFIX)
-        if match:
-            group = match.groups()
-            length = int(group[0])
-            contents = group[1][:length]
-            self._remove_from_message(
-                '%s|%d|%s' % (UPDATE_PART_PREFIX, length, contents)
-            )
-            if self._pending_update:
-                self._pending_update += contents[:length]
-        return bool(match)
+        pattern = '%s\|(\d+)\|(.*)' % UPDATE_PART_PREFIX
+        with self._find_length_and_contents(pattern) as (length, contents):
+            if contents != None:
+                self._remove_from_message(
+                    '%s|%d|%s' % (UPDATE_PART_PREFIX, length, contents)
+                )
+                if self._pending_update:
+                    self._pending_update += contents[:length]
+            return contents != None
 
     def _contents_end(self):
-        match = self._do_match('%s\|(\d+)\|(.*)' % UPDATE_END_PREFIX)
-        if match:
-            group = match.groups()
-            length = int(group[0])
-            contents = group[1][:length]
-            self._remove_from_message(
-                '%s|%d|%s' % (UPDATE_END_PREFIX, length, contents)
-            )
-            if self._pending_update:
-                self._update_contents(self._pending_update + contents)
-            self._pending_update = None
-        return bool(match)
+        pattern = '%s\|(\d+)\|(.*)' % UPDATE_END_PREFIX
+        with self._find_length_and_contents(pattern) as (length, contents):
+            if contents != None:
+                self._remove_from_message(
+                    '%s|%d|%s' % (UPDATE_END_PREFIX, length, contents)
+                )
+                if self._pending_update:
+                    self._update_contents(self._pending_update + contents)
+                self._pending_update = None
+            return contents != None
 
     def _cursor_position(self):
-        match = self._do_match('%s\|(\d+)\|(\d+)' % CURSOR_POSITION_PREFIX)
-        if match:
-            group = match.groups()
-            line = int(group[0])
-            column = int(group[1])
-            self._remove_from_message(
-                '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
-            )
-            self._apply_cursor_position(line, column)
-            self._pending_update = None
-        return bool(match)
+        pattern = '%s\|(\d+)\|(\d+)' % CURSOR_POSITION_PREFIX
+        with self._find_match(pattern) as group:
+            if group != None:
+                line = int(group[0])
+                column = int(group[1])
+                self._remove_from_message(
+                    '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
+                )
+                self._apply_cursor_position(line, column)
+                self._pending_update = None
+            return group != None
 
     def process(self, message):
         if message:
