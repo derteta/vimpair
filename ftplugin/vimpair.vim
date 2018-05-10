@@ -75,10 +75,11 @@ function! VimpairServerStart()
   augroup END
 
 python << EOF
-connections = []
 server_socket = server_socket_factory()
 
-check_for_new_connection_to_client()
+if server_socket:
+  connections = []
+  check_for_new_connection_to_client()
 EOF
 endfunction
 
