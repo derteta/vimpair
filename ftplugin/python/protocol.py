@@ -146,17 +146,22 @@ class MessageHandler(object):
                 self._pending_update = None
             return group != None
 
+    @contextmanager
+    def _current_message_being(self, message):
+        self._current_message = self._leftover + message
+        yield
+        self._leftover = self._current_message.replace(self._leftover, '')
+        self._current_message = ''
+
     def process(self, message):
         if message:
-            self._current_message = self._leftover + message
-            for processing_call in (
-                self._contents_update,
-                self._cursor_position,
-                self._contents_start,
-                self._contents_part,
-                self._contents_end,
-            ):
-                while processing_call():
-                    pass
-            self._leftover = self._current_message.replace(self._leftover, '')
-            self._current_message = ''
+            with self._current_message_being(message):
+                for processing_call in (
+                    self._contents_update,
+                    self._cursor_position,
+                    self._contents_start,
+                    self._contents_part,
+                    self._contents_end,
+                ):
+                    while processing_call():
+                        pass
