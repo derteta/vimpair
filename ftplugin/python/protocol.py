@@ -67,6 +67,7 @@ def generate_cursor_position_message(line, column):
 class MessageHandler(object):
 
     def __init__(self, update_contents=None, apply_cursor_position=None):
+        self._leftover = ''
         self._current_message = ''
         self._pending_update = None
         self._update_contents = _ensure_callable(update_contents)
@@ -147,7 +148,7 @@ class MessageHandler(object):
 
     def process(self, message):
         if message:
-            self._current_message = message
+            self._current_message = self._leftover + message
             for processing_call in (
                 self._contents_update,
                 self._cursor_position,
@@ -157,4 +158,5 @@ class MessageHandler(object):
             ):
                 while processing_call():
                     pass
+            self._leftover = self._current_message.replace(self._leftover, '')
             self._current_message = ''

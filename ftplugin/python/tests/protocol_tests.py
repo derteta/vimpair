@@ -428,3 +428,38 @@ class MessageHandlerSplitContentsTests(TestCase):
         self.handler.process(UPDATE_END_PREFIX + '|1|3')
 
         self.update_contents.assert_not_called()
+
+
+class MessageHandlerSplitMessageTests(TestCase):
+
+    def setUp(self):
+        self.update_contents = Mock()
+        self.handler = MessageHandler(update_contents=self.update_contents)
+
+
+    def test_calls_update_contents_on_receiving_final_message_part(self):
+        message = FULL_UPDATE_PREFIX + '|5|Short'
+        self.handler.process(message[:8])
+
+        self.handler.process(message[8:])
+
+        self.update_contents.assert_called_with('Short')
+
+    def test_interleaved_message_cancels_split_message(self):
+        message = FULL_UPDATE_PREFIX + '|5|Short'
+        self.handler.process(message[:8])
+        self.handler.process(CURSOR_POSITION_PREFIX + '|1|1')
+
+        self.handler.process(message[8:])
+
+        self.update_contents.assert_not_called()
+
+    def test_interleaved_split_message_cancels_first_split_message(self):
+        message1 = FULL_UPDATE_PREFIX + '|5|Short'
+        message2 = CURSOR_POSITION_PREFIX + '|1|1'
+        for part in (message1[:8], message2[:8], message2[8:]):
+            self.handler.process(part)
+
+        self.handler.process(message1[8:])
+
+        self.update_contents.assert_not_called()
