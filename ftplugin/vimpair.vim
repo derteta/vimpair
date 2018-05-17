@@ -77,6 +77,7 @@ function! VimpairServerStart()
     autocmd InsertLeave * call VimpairServerUpdate()
     autocmd CursorMoved * python send_cursor_position()
     autocmd CursorMovedI * python send_cursor_position()
+    autocmd VimLeavePre * call VimpairServerStop()
   augroup END
 
 python << EOF
@@ -120,6 +121,10 @@ message_handler = MessageHandler(
 
 check_for_connection_to_server()
 EOF
+  augroup VimpairClient
+    autocmd VimLeavePre * call VimpairClientStop()
+  augroup END
+
   let g:_VimpairClientTimer = timer_start(
         \ 200,
         \ 'VimpairClientUpdate',
@@ -133,6 +138,10 @@ function! VimpairClientStop()
   endif
   python connections = None
   python message_handler = None
+
+  augroup VimpairClient
+    autocmd!
+  augroup END
 endfunction
 
 function! VimpairClientUpdate(timer)
