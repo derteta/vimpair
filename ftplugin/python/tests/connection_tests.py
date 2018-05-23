@@ -1,6 +1,6 @@
 from functools import partial
 from mock import Mock
-from socket import timeout
+from socket import error, timeout
 from unittest import TestCase
 
 from ..connection import Connection
@@ -9,6 +9,11 @@ def fake_recv(_number_of_bytes, values=[]):
     if len(values) == 0:
         raise timeout
     return values.pop()
+
+def raise_broken_pipe(*_):
+    err = error()
+    err.errno = 32
+    raise err
 
 
 class ConnectionTests(TestCase):
@@ -43,3 +48,19 @@ class ConnectionTests(TestCase):
             ['Some messageAnother message'],
             self.connection.received_messages,
         )
+
+    def test_closing_socket_on_broken_pipe(self):
+        self.socket.sendall.side_effect = raise_broken_pipe
+
+        self.connection.send_message('Some message')
+
+        self.socket.close.assert_called()
+
+    def test_sendall_not_called_again_after_broken_pipe(self):
+        self.socket.sendall.side_effect = raise_broken_pipe
+        self.connection.send_message('Some message')
+        self.socket.sendall.reset_mock()
+
+        self.connection.send_message('Another message')
+
+        self.socket.sendall.assert_not_called()

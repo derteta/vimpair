@@ -3,6 +3,7 @@ from socket import (
     SOCK_STREAM,
     SOL_SOCKET,
     SO_REUSEADDR,
+    error,
     gethostbyname,
     gethostname,
     socket,
@@ -12,6 +13,8 @@ from socket import (
 SERVER_ADDRESS = gethostbyname(gethostname())
 SERVER_PORT = 50007
 MAX_READ_SIZE = 1024
+
+_noop = lambda *a, **k: None
 
 
 def create_server_socket():
@@ -45,8 +48,16 @@ class Connection(object):
 
     def __init__(self, socket):
         self.close = socket.close
-        self.send_message = socket.sendall
         self._socket = socket
+        self._sendall = socket.sendall
+
+    def send_message(self, message):
+        try:
+            self._sendall(message)
+        except error as e:
+            if e.errno == 32: # Broken pipe
+                self.close()
+                self._sendall = _noop
 
     @property
     def received_messages(self):
