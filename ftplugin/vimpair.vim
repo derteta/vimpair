@@ -70,15 +70,25 @@ EOF
 let g:_VimpairClientTimer = ""
 
 
-function! VimpairServerStart()
-  augroup VimpairServer
+function! _VimpairStartObserving()
+  augroup VimpairEditorObservers
     autocmd TextChanged * python send_contents_update()
     autocmd TextChangedI * python send_contents_update()
     autocmd InsertLeave * call VimpairServerUpdate()
     autocmd CursorMoved * python send_cursor_position()
     autocmd CursorMovedI * python send_cursor_position()
-    autocmd VimLeavePre * call VimpairServerStop()
   augroup END
+endfunction
+
+function! _VimpairStopObserving()
+  augroup VimpairEditorObservers
+    autocmd!
+  augroup END
+endfunction
+
+
+function! VimpairServerStart()
+  call _VimpairStartObserving()
 
 python << EOF
 server_socket = server_socket_factory()
@@ -87,6 +97,10 @@ if server_socket:
   connections = []
   check_for_new_connection_to_client()
 EOF
+
+  augroup VimpairServer
+    autocmd VimLeavePre * call VimpairServerStop()
+  augroup END
 endfunction
 
 function! VimpairServerStop()
@@ -103,6 +117,8 @@ EOF
   augroup VimpairServer
     autocmd!
   augroup END
+
+  call _VimpairStopObserving()
 endfunction
 
 function! VimpairServerUpdate()
