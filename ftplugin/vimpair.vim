@@ -41,11 +41,43 @@ def check_for_new_connection_to_client():
   if connection_socket:
     connections.append(Connection(connection_socket))
 
+def setup_server_socket():
+  global connections, server_socket
+  server_socket = server_socket_factory()
+  if server_socket:
+    connections = []
+    check_for_new_connection_to_client()
+
+def dispose_of_server_socket():
+  global connections, server_socket
+  for connection in connections:
+    connection.close()
+  connections = None
+
+  if server_socket:
+    server_socket.close()
+    server_socket = None
+
 def check_for_connection_to_server():
   global connections
   connection_socket = client_socket_factory()
   if connection_socket:
     connections.append(Connection(connection_socket))
+
+def setup_client_socket():
+  global connections, message_handler
+  connections = []
+  message_handler = MessageHandler(
+    update_contents=partial(apply_contents_update, vim=vim),
+    apply_cursor_position=partial(apply_cursor_position, vim=vim),
+  )
+
+  check_for_connection_to_server()
+
+def dispose_of_client_socket():
+  global connections, message_handler
+  connections = None
+  message_handler = None
 
 def send_contents_update():
   contents = get_current_contents(vim=vim)
@@ -88,37 +120,23 @@ endfunction
 
 
 function! VimpairServerStart()
-  call _VimpairStartObserving()
-
-python << EOF
-server_socket = server_socket_factory()
-
-if server_socket:
-  connections = []
-  check_for_new_connection_to_client()
-EOF
-
   augroup VimpairServer
     autocmd VimLeavePre * call VimpairServerStop()
   augroup END
+
+  python setup_server_socket()
+
+  call _VimpairStartObserving()
 endfunction
 
 function! VimpairServerStop()
-python << EOF
-for connection in connections:
-  connection.close()
-connections = None
-
-if server_socket:
-  server_socket.close()
-  server_socket = None
-EOF
-
   augroup VimpairServer
     autocmd!
   augroup END
 
   call _VimpairStopObserving()
+
+  python dispose_of_server_socket()
 endfunction
 
 function! VimpairServerUpdate()
@@ -128,15 +146,7 @@ endfunction
 
 
 function! VimpairClientStart()
-python << EOF
-connections = []
-message_handler = MessageHandler(
-  update_contents=partial(apply_contents_update, vim=vim),
-  apply_cursor_position=partial(apply_cursor_position, vim=vim),
-)
-
-check_for_connection_to_server()
-EOF
+  python setup_client_socket()
   augroup VimpairClient
     autocmd VimLeavePre * call VimpairClientStop()
   augroup END
@@ -152,8 +162,7 @@ function! VimpairClientStop()
     call timer_stop(g:_VimpairClientTimer)
     let g:_VimpairClientTimer = ""
   endif
-  python connections = None
-  python message_handler = None
+  python dispose_of_client_socket()
 
   augroup VimpairClient
     autocmd!
