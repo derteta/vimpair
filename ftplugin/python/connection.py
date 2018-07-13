@@ -5,12 +5,11 @@ from socket import (
     SO_REUSEADDR,
     error,
     gethostbyname,
-    gethostname,
     socket,
 )
 
 
-SERVER_ADDRESS = gethostbyname(gethostname())
+SERVER_ADDRESS = gethostbyname('localhost')
 SERVER_PORT = 50007
 MAX_READ_SIZE = 1024
 
