@@ -99,8 +99,6 @@ def process_messages():
 
 EOF
 
-let g:_VimpairClientTimer = ""
-
 
 function! _VimpairStartObserving()
   augroup VimpairEditorObservers
@@ -116,6 +114,20 @@ function! _VimpairStopObserving()
   augroup VimpairEditorObservers
     autocmd!
   augroup END
+endfunction
+
+
+let g:_VimpairTimer = ""
+
+function! _VimpairStartTimer(func)
+  let g:_VimpairTimer = timer_start(200, a:func, {'repeat': -1})
+endfunction
+
+function! _VimpairStopTimer()
+  if g:_VimpairTimer != ""
+    call timer_stop(g:_VimpairTimer)
+    let g:_VimpairTimer = ""
+  endif
 endfunction
 
 
@@ -147,26 +159,22 @@ endfunction
 
 function! VimpairClientStart()
   python setup_client_socket()
+
   augroup VimpairClient
     autocmd VimLeavePre * call VimpairClientStop()
   augroup END
 
-  let g:_VimpairClientTimer = timer_start(
-        \ 200,
-        \ 'VimpairClientUpdate',
-        \ {'repeat': -1})
+  call _VimpairStartTimer('VimpairClientUpdate')
 endfunction
 
 function! VimpairClientStop()
-  if g:_VimpairClientTimer != ""
-    call timer_stop(g:_VimpairClientTimer)
-    let g:_VimpairClientTimer = ""
-  endif
-  python dispose_of_client_socket()
+  call _VimpairStopTimer()
 
   augroup VimpairClient
     autocmd!
   augroup END
+
+  python dispose_of_client_socket()
 endfunction
 
 function! VimpairClientUpdate(timer)
