@@ -30,33 +30,58 @@ from vim_interface import (
 server_socket_factory = create_server_socket
 client_socket_factory = create_client_socket
 connections = []
-server_socket = None
 message_handler = None
+client_connector = None
 
-def check_for_new_connection_to_client():
-  global connections
-  connection_socket, _ = server_socket.accept() \
-    if server_socket \
-    else (None, '')
-  if connection_socket:
-    connections.append(Connection(connection_socket))
 
-def setup_server_socket():
-  global connections, server_socket
-  server_socket = server_socket_factory()
-  if server_socket:
-    connections = []
-    check_for_new_connection_to_client()
+class ClientConnector(object):
 
-def dispose_of_server_socket():
-  global connections, server_socket
-  for connection in connections:
-    connection.close()
-  connections = None
+  def __init__(self):
+    super(ClientConnector, self).__init__()
+    self._connections = []
+    self._server_socket = server_socket_factory()
+    if self._server_socket:
+      self._check_for_new_connection_to_client()
 
-  if server_socket:
-    server_socket.close()
-    server_socket = None
+  @property
+  def connections(self):
+    return self._connections
+
+  def _check_for_new_connection_to_client(self):
+    connection_socket, _ = self._server_socket.accept() \
+      if self._server_socket \
+      else (None, '')
+    if connection_socket:
+      self._connections.append(Connection(connection_socket))
+
+  def disconnect(self):
+    for connection in self._connections:
+      connection.close()
+
+    if self._server_socket:
+      self._server_socket.close()
+
+    self._connections = None
+    self._server_socket = None
+
+
+def send_contents_update():
+  contents = get_current_contents(vim=vim)
+  messages = generate_contents_update_messages(contents)
+  for connection in client_connector.connections:
+    for message in messages:
+      connection.send_message(message)
+
+def send_cursor_position():
+  line, column = get_cursor_position(vim=vim)
+  message = generate_cursor_position_message(line, column)
+  for connection in client_connector.connections:
+    connection.send_message(message)
+
+def update_contents_and_cursor():
+  send_contents_update()
+  send_cursor_position()
+
 
 def check_for_connection_to_server():
   global connections
@@ -79,19 +104,6 @@ def dispose_of_client_socket():
   connections = None
   message_handler = None
 
-def send_contents_update():
-  contents = get_current_contents(vim=vim)
-  messages = generate_contents_update_messages(contents)
-  for connection in connections:
-    for message in messages:
-      connection.send_message(message)
-
-def send_cursor_position():
-  line, column = get_cursor_position(vim=vim)
-  message = generate_cursor_position_message(line, column)
-  for connection in connections:
-    connection.send_message(message)
-
 def process_messages():
   if connections:
     for message in connections[0].received_messages:
@@ -104,7 +116,7 @@ function! _VimpairStartObserving()
   augroup VimpairEditorObservers
     autocmd TextChanged * python send_contents_update()
     autocmd TextChangedI * python send_contents_update()
-    autocmd InsertLeave * call VimpairServerUpdate()
+    autocmd InsertLeave * python update_contents_and_cursor()
     autocmd CursorMoved * python send_cursor_position()
     autocmd CursorMovedI * python send_cursor_position()
   augroup END
@@ -136,7 +148,7 @@ function! VimpairServerStart()
     autocmd VimLeavePre * call VimpairServerStop()
   augroup END
 
-  python setup_server_socket()
+  python client_connector = ClientConnector()
 
   call _VimpairStartObserving()
 endfunction
@@ -148,12 +160,7 @@ function! VimpairServerStop()
 
   call _VimpairStopObserving()
 
-  python dispose_of_server_socket()
-endfunction
-
-function! VimpairServerUpdate()
-  python send_contents_update()
-  python send_cursor_position()
+  python client_connector.disconnect()
 endfunction
 
 
