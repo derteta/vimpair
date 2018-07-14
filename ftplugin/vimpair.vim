@@ -29,9 +29,14 @@ from vim_interface import (
 
 server_socket_factory = create_server_socket
 client_socket_factory = create_client_socket
-connections = []
-message_handler = None
+message_handler_factory = lambda : MessageHandler(
+  update_contents=partial(apply_contents_update, vim=vim),
+  apply_cursor_position=partial(apply_cursor_position, vim=vim),
+)
+
 client_connector = None
+server_connector = None
+message_handler = None
 
 
 class ClientConnector(object):
@@ -83,31 +88,31 @@ def update_contents_and_cursor():
   send_cursor_position()
 
 
-def check_for_connection_to_server():
-  global connections
-  connection_socket = client_socket_factory()
-  if connection_socket:
-    connections.append(Connection(connection_socket))
+class ServerConnector(object):
 
-def setup_client_socket():
-  global connections, message_handler
-  connections = []
-  message_handler = MessageHandler(
-    update_contents=partial(apply_contents_update, vim=vim),
-    apply_cursor_position=partial(apply_cursor_position, vim=vim),
-  )
+  def __init__(self):
+    super(ServerConnector, self).__init__()
+    self._connection = None
+    self._check_for_connection_to_server()
 
-  check_for_connection_to_server()
+  @property
+  def connection(self):
+    return self._connection
 
-def dispose_of_client_socket():
-  global connections, message_handler
-  connections = None
-  message_handler = None
+  def _check_for_connection_to_server(self):
+    connection_socket = client_socket_factory()
+    if connection_socket:
+      self._connection = Connection(connection_socket)
+
+  def disconnect(self):
+    if self._connection is not None:
+      self._connection.close()
+      self._connection = None
+
 
 def process_messages():
-  if connections:
-    for message in connections[0].received_messages:
-      message_handler.process(message)
+  for message in server_connector.connection.received_messages:
+    message_handler.process(message)
 
 EOF
 
@@ -165,7 +170,8 @@ endfunction
 
 
 function! VimpairClientStart()
-  python setup_client_socket()
+  python server_connector = ServerConnector()
+  python message_handler = message_handler_factory()
 
   augroup VimpairClient
     autocmd VimLeavePre * call VimpairClientStop()
@@ -181,7 +187,8 @@ function! VimpairClientStop()
     autocmd!
   augroup END
 
-  python dispose_of_client_socket()
+  python message_handler = None
+  python server_connector.disconnect()
 endfunction
 
 function! VimpairClientUpdate(timer)
