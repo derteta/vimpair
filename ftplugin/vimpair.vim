@@ -37,55 +37,41 @@ message_handler_factory = lambda : MessageHandler(
 client_connector = None
 server_connector = None
 message_handler = None
+current_connection = None
 
 
 class ClientConnector(object):
 
   def __init__(self):
     super(ClientConnector, self).__init__()
-    self._connections = []
+    self._connection = None
     self._server_socket = server_socket_factory()
     if self._server_socket:
       self._check_for_new_connection_to_client()
 
-  @property
-  def connections(self):
-    return self._connections
-
   def _check_for_new_connection_to_client(self):
+    global current_connection
+    assert current_connection is None
+
     connection_socket, _ = self._server_socket.accept() \
       if self._server_socket \
       else (None, '')
     if connection_socket:
-      self._connections.append(Connection(connection_socket))
+      self._connection = Connection(connection_socket)
+      current_connection = self._connection
 
   def disconnect(self):
-    for connection in self._connections:
-      connection.close()
+    global current_connection
+    assert current_connection is self._connection
+
+    if self._connection:
+      self._connection.close()
+      self._connection = None
+      current_connection = None
 
     if self._server_socket:
       self._server_socket.close()
-
-    self._connections = None
-    self._server_socket = None
-
-
-def send_contents_update():
-  contents = get_current_contents(vim=vim)
-  messages = generate_contents_update_messages(contents)
-  for connection in client_connector.connections:
-    for message in messages:
-      connection.send_message(message)
-
-def send_cursor_position():
-  line, column = get_cursor_position(vim=vim)
-  message = generate_cursor_position_message(line, column)
-  for connection in client_connector.connections:
-    connection.send_message(message)
-
-def update_contents_and_cursor():
-  send_contents_update()
-  send_cursor_position()
+      self._server_socket = None
 
 
 class ServerConnector(object):
@@ -95,24 +81,47 @@ class ServerConnector(object):
     self._connection = None
     self._check_for_connection_to_server()
 
-  @property
-  def connection(self):
-    return self._connection
-
   def _check_for_connection_to_server(self):
+    global current_connection
+    assert current_connection is None
+
     connection_socket = client_socket_factory()
     if connection_socket:
       self._connection = Connection(connection_socket)
+      current_connection = self._connection
 
   def disconnect(self):
+    global current_connection
+    assert current_connection is self._connection
+
     if self._connection is not None:
       self._connection.close()
       self._connection = None
+      current_connection = None
 
+
+def send_message(message):
+  if current_connection:
+    current_connection.send_message(message)
+
+def send_contents_update():
+  contents = get_current_contents(vim=vim)
+  messages = generate_contents_update_messages(contents)
+  for message in messages:
+    send_message(message)
+
+def send_cursor_position():
+  line, column = get_cursor_position(vim=vim)
+  send_message(generate_cursor_position_message(line, column))
+
+def update_contents_and_cursor():
+  send_contents_update()
+  send_cursor_position()
 
 def process_messages():
-  for message in server_connector.connection.received_messages:
-    message_handler.process(message)
+  if current_connection:
+    for message in current_connection.received_messages:
+      message_handler.process(message)
 
 EOF
 
