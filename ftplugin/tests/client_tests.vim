@@ -24,6 +24,11 @@ assert actual == expected, actual
 EOF
 endfunction
 
+function! _VPClientTest_assert_has_sent_message(expected)
+  python fake_socket.sendall.assert_any_call(
+    \ vim.eval('a:expected'))
+endfunction
+
 function! _VPClientTest_wait_for_timer()
   sleep 300m
 endfunction
@@ -131,6 +136,45 @@ EOF
     \ "67890123456789012345678901234567890123456789012345678901234567890123" .
     \ "45678901234567890123456789012345678901234567890123456789012345678901" .
     \ "234567890123456789012345678901234567890123456789"])
+endfunction
+
+function! VPClientTest_send_buffer_contents_after_taking_control()
+  python received_messages = ["VIMPAIR_TAKE_CONTROL"]
+  python fake_socket.recv = lambda *a: received_messages.pop()
+  call _VPClientTest_wait_for_timer()
+
+  execute("normal iThis is just some text")
+
+  call _VPClientTest_assert_has_sent_message(
+    \ "VIMPAIR_FULL_UPDATE|22|This is just some text")
+endfunction
+
+function! VPClientTest_send_cursor_position_after_taking_control()
+  python received_messages = ["VIMPAIR_TAKE_CONTROL"]
+  python fake_socket.recv = lambda *a: received_messages.pop()
+  call _VPClientTest_wait_for_timer()
+
+  execute("normal iThis is line one")
+  execute("normal oThis is line two")
+
+  execute("normal gg0ww")
+  " The CursorMoved autocommand is not reported in this scope,
+  " so we need to manually trigger it
+  execute("doautocmd CursorMoved")
+
+  call _VPClientTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|0|8")
+endfunction
+
+function! VPClientTest_doesnt_apply_received_contents_updates_after_taking_control()
+  python received_messages = ["VIMPAIR_TAKE_CONTROL"]
+  python fake_socket.recv = lambda *a: received_messages.pop()
+  call _VPClientTest_wait_for_timer()
+
+  python received_messages = ["VIMPAIR_FULL_UPDATE|16|This is line one"]
+  python fake_socket.recv = lambda *a: received_messages.pop()
+  call _VPClientTest_wait_for_timer()
+
+  call _VPClientTest_assert_buffer_has_contents([""])
 endfunction
 
 

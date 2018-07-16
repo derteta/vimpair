@@ -29,10 +29,6 @@ from vim_interface import (
 
 server_socket_factory = create_server_socket
 client_socket_factory = create_client_socket
-message_handler_factory = lambda : MessageHandler(
-  update_contents=partial(apply_contents_update, vim=vim),
-  apply_cursor_position=partial(apply_cursor_position, vim=vim),
-)
 
 client_connector = None
 server_connector = None
@@ -123,6 +119,15 @@ def process_messages():
     for message in current_connection.received_messages:
       message_handler.process(message)
 
+def handle_take_control():
+  vim.command('call _VimpairStopTimer()')
+  vim.command('call _VimpairStartObserving()')
+
+message_handler_factory = lambda : MessageHandler(
+  update_contents=partial(apply_contents_update, vim=vim),
+  apply_cursor_position=partial(apply_cursor_position, vim=vim),
+  take_control=handle_take_control,
+)
 EOF
 
 
@@ -191,6 +196,7 @@ endfunction
 
 function! VimpairClientStop()
   call _VimpairStopTimer()
+  call _VimpairStopObserving()
 
   augroup VimpairClient
     autocmd!
