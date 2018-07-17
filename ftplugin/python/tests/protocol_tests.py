@@ -12,6 +12,7 @@ from ..protocol import (
     UPDATE_START_PREFIX,
     UPDATE_PART_PREFIX,
     UPDATE_END_PREFIX,
+    TAKE_CONTROL_MESSAGE,
 )
 
 
@@ -412,6 +413,7 @@ class MessageHandlerSplitContentsTests(TestCase):
     @data(
         TC('full_update', interrupting_message=FULL_UPDATE_PREFIX + '|5|Short'),
         TC('cursor',      interrupting_message=CURSOR_POSITION_PREFIX + '|1|1'),
+        TC('take_control',interrupting_message=TAKE_CONTROL_MESSAGE),
     )
     def test_does_not_call_update_contents_if_other_message_received_before_end(
         self,
@@ -463,3 +465,62 @@ class MessageHandlerSplitMessageTests(TestCase):
         self.handler.process(message1[8:])
 
         self.update_contents.assert_not_called()
+
+
+@ddt
+class MessageHandlerTakeControlTests(TestCase):
+
+    def setUp(self):
+        self.take_control = Mock()
+        self.update_contents = Mock()
+        self.apply_cursor_position = Mock()
+        self.handler = MessageHandler(
+            update_contents=self.update_contents,
+            apply_cursor_position=self.apply_cursor_position,
+            take_control=self.take_control,
+        )
+
+
+    def test_calls_take_control_when_receiving_take_control_message(self):
+        # not checking for TAKE_CONTROL_MESSAGE to prevent false positives
+        self.handler.process('VIMPAIR_TAKE_CONTROL')
+
+        self.take_control.assert_called()
+
+    @data(
+        TC(
+            'full_update',
+            message=FULL_UPDATE_PREFIX + '|5|Short',
+            expected_callback=lambda s: s.update_contents,
+        ),
+        TC(
+            'cursor',
+            message=CURSOR_POSITION_PREFIX + '|1|1',
+            expected_callback=lambda s: s.apply_cursor_position,
+        ),
+    )
+    def test_message_before_take_control_are_processed(self, context,):
+        message = context.message + TAKE_CONTROL_MESSAGE
+
+        self.handler.process(message)
+
+        context.expected_callback(self).assert_called()
+
+    @data(
+        TC(
+            'full_update',
+            message=FULL_UPDATE_PREFIX + '|5|Short',
+            expected_callback=lambda s: s.update_contents,
+        ),
+        TC(
+            'cursor',
+            message=CURSOR_POSITION_PREFIX + '|1|1',
+            expected_callback=lambda s: s.apply_cursor_position,
+        ),
+    )
+    def test_message_after_take_control_are_processed(self, context,):
+        message = TAKE_CONTROL_MESSAGE + context.message
+
+        self.handler.process(message)
+
+        context.expected_callback(self).assert_not_called()
