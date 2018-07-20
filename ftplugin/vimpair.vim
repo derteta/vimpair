@@ -37,10 +37,10 @@ message_handler = None
 
 class ClientConnector(object):
 
-  def __init__(self):
+  def __init__(self, socket_factory):
     super(ClientConnector, self).__init__()
     self._connection = None
-    self._server_socket = server_socket_factory()
+    self._server_socket = socket_factory()
     if self._server_socket:
       self._check_for_new_connection_to_client()
 
@@ -67,13 +67,13 @@ class ClientConnector(object):
 
 class ServerConnector(object):
 
-  def __init__(self):
+  def __init__(self, socket_factory):
     super(ServerConnector, self).__init__()
     self._connection = None
-    self._check_for_connection_to_server()
+    self._check_for_connection_to_server(socket_factory)
 
-  def _check_for_connection_to_server(self):
-    connection_socket = client_socket_factory()
+  def _check_for_connection_to_server(self, socket_factory):
+    connection_socket = socket_factory()
     if connection_socket:
       self._connection = Connection(connection_socket)
 
@@ -168,7 +168,7 @@ function! VimpairServerStart()
     autocmd VimLeavePre * call VimpairServerStop()
   augroup END
 
-  python connector = ClientConnector()
+  python connector = ClientConnector(server_socket_factory)
   python message_handler = message_handler_factory()
 
   call _VimpairStartObserving()
@@ -188,7 +188,7 @@ endfunction
 
 
 function! VimpairClientStart()
-  python connector = ServerConnector()
+  python connector = ServerConnector(client_socket_factory)
   python message_handler = message_handler_factory()
 
   augroup VimpairClient
