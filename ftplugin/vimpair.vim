@@ -31,8 +31,7 @@ from vim_interface import (
 server_socket_factory = create_server_socket
 client_socket_factory = create_client_socket
 
-client_connector = None
-server_connector = None
+connector = None
 message_handler = None
 current_connection = None
 
@@ -178,7 +177,7 @@ function! VimpairServerStart()
     autocmd VimLeavePre * call VimpairServerStop()
   augroup END
 
-  python client_connector = ClientConnector()
+  python connector = ClientConnector()
   python message_handler = message_handler_factory()
 
   call _VimpairStartObserving()
@@ -193,12 +192,12 @@ function! VimpairServerStop()
   call _VimpairStopTimer()
 
   python message_handler = None
-  python client_connector.disconnect()
+  python connector.disconnect()
 endfunction
 
 
 function! VimpairClientStart()
-  python server_connector = ServerConnector()
+  python connector = ServerConnector()
   python message_handler = message_handler_factory()
 
   augroup VimpairClient
@@ -217,7 +216,7 @@ function! VimpairClientStop()
   augroup END
 
   python message_handler = None
-  python server_connector.disconnect()
+  python connector.disconnect()
 endfunction
 
 
