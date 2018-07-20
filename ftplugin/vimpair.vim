@@ -155,8 +155,12 @@ endfunction
 
 let g:_VimpairTimer = ""
 
-function! _VimpairStartTimer(func)
-  let g:_VimpairTimer = timer_start(200, a:func, {'repeat': -1})
+function! _VimpairStartTimer()
+  let g:_VimpairTimer = timer_start(
+        \  200,
+        \  {-> execute("python process_messages()", "")},
+        \  {'repeat': -1}
+        \)
 endfunction
 
 function! _VimpairStopTimer()
@@ -196,7 +200,7 @@ function! VimpairClientStart()
     autocmd VimLeavePre * call VimpairClientStop()
   augroup END
 
-  call _VimpairStartTimer('VimpairClientUpdate')
+  call _VimpairStartTimer()
 endfunction
 
 function! VimpairClientStop()
@@ -209,10 +213,6 @@ function! VimpairClientStop()
 
   python message_handler = None
   python server_connector.disconnect()
-endfunction
-
-function! VimpairClientUpdate(timer)
-  python process_messages()
 endfunction
 
 
