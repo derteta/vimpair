@@ -66,12 +66,6 @@ def hand_over_control():
   vim.command('call _VimpairStopObserving()')
   send_message(generate_take_control_message())
   vim.command('call _VimpairStartTimer()')
-
-message_handler_factory = lambda : MessageHandler(
-  update_contents=partial(apply_contents_update, vim=vim),
-  apply_cursor_position=partial(apply_cursor_position, vim=vim),
-  take_control=handle_take_control,
-)
 EOF
 
 
@@ -111,51 +105,54 @@ function! _VimpairStopTimer()
 endfunction
 
 
-function! VimpairServerStart()
-  augroup VimpairServer
-    autocmd VimLeavePre * call VimpairServerStop()
+function! _VimpairInitialize()
+  augroup VimpairCleanup
+    autocmd VimLeavePre * call s:VimpairCleanup()
   augroup END
 
+  python message_handler = MessageHandler(
+        \  update_contents=partial(apply_contents_update, vim=vim),
+        \  apply_cursor_position=partial(apply_cursor_position, vim=vim),
+        \  take_control=handle_take_control,
+        \)
+endfunction
+
+function! _VimpairCleanup()
+  call _VimpairStopTimer()
+  call _VimpairStopObserving()
+
+  augroup VimpairCleanup
+    autocmd!
+  augroup END
+
+  python message_handler = None
+  python connector.disconnect()
+endfunction
+
+
+function! VimpairServerStart()
+  call _VimpairInitialize()
+
   python connector = ClientConnector(server_socket_factory)
-  python message_handler = message_handler_factory()
 
   call _VimpairStartObserving()
 endfunction
 
 function! VimpairServerStop()
-  augroup VimpairServer
-    autocmd!
-  augroup END
-
-  call _VimpairStopObserving()
-  call _VimpairStopTimer()
-
-  python message_handler = None
-  python connector.disconnect()
+  call _VimpairCleanup()
 endfunction
 
 
 function! VimpairClientStart()
-  python connector = ServerConnector(client_socket_factory)
-  python message_handler = message_handler_factory()
+  call _VimpairInitialize()
 
-  augroup VimpairClient
-    autocmd VimLeavePre * call VimpairClientStop()
-  augroup END
+  python connector = ServerConnector(client_socket_factory)
 
   call _VimpairStartTimer()
 endfunction
 
 function! VimpairClientStop()
-  call _VimpairStopTimer()
-  call _VimpairStopObserving()
-
-  augroup VimpairClient
-    autocmd!
-  augroup END
-
-  python message_handler = None
-  python connector.disconnect()
+  call _VimpairCleanup()
 endfunction
 
 
