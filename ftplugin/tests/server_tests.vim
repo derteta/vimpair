@@ -27,6 +27,18 @@ function! _VPServerTest_assert_has_not_sent_message(expected)
   python assert not call(vim.eval('a:expected')) in sendall_calls
 endfunction
 
+function! _VPServerTest_assert_buffer_has_contents(expected)
+python << EOF
+actual = list(vim.current.buffer)
+expected = list(vim.eval('a:expected'))
+assert actual == expected, actual
+EOF
+endfunction
+
+function! _VPServerTest_wait_for_timer()
+  sleep 300m
+endfunction
+
 
 function! VPServerTest_sends_buffer_contents_on_connection()
   execute("normal iThis is just some text")
@@ -110,6 +122,16 @@ function! VPServerTest_does_not_send_updates_after_handover()
 
   call _VPServerTest_assert_has_not_sent_message(
     \ "VIMPAIR_FULL_UPDATE|22|This is just some text")
+endfunction
+
+function! VPServerTest_applies_received_updates_after_handover()
+  call VimpairHandover()
+  python received_messages = ["VIMPAIR_FULL_UPDATE|16|This is line one"]
+  python fake_socket.recv = lambda *a: received_messages.pop()
+
+  call _VPServerTest_wait_for_timer()
+
+  call _VPServerTest_assert_buffer_has_contents(["This is line one"])
 endfunction
 
 

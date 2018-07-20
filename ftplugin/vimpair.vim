@@ -127,6 +127,7 @@ def handle_take_control():
 def hand_over_control():
   vim.command('call _VimpairStopObserving()')
   send_message(generate_take_control_message())
+  vim.command('call _VimpairStartTimer()')
 
 message_handler_factory = lambda : MessageHandler(
   update_contents=partial(apply_contents_update, vim=vim),
@@ -177,6 +178,7 @@ function! VimpairServerStart()
   augroup END
 
   python client_connector = ClientConnector()
+  python message_handler = message_handler_factory()
 
   call _VimpairStartObserving()
 endfunction
@@ -187,7 +189,9 @@ function! VimpairServerStop()
   augroup END
 
   call _VimpairStopObserving()
+  call _VimpairStopTimer()
 
+  python message_handler = None
   python client_connector.disconnect()
 endfunction
 
