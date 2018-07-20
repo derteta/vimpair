@@ -33,7 +33,6 @@ client_socket_factory = create_client_socket
 
 connector = None
 message_handler = None
-current_connection = None
 
 
 class ClientConnector(object):
@@ -46,28 +45,24 @@ class ClientConnector(object):
       self._check_for_new_connection_to_client()
 
   def _check_for_new_connection_to_client(self):
-    global current_connection
-    assert current_connection is None
-
     connection_socket, _ = self._server_socket.accept() \
       if self._server_socket \
       else (None, '')
     if connection_socket:
       self._connection = Connection(connection_socket)
-      current_connection = self._connection
 
   def disconnect(self):
-    global current_connection
-    assert current_connection is self._connection
-
     if self._connection:
       self._connection.close()
       self._connection = None
-      current_connection = None
 
     if self._server_socket:
       self._server_socket.close()
       self._server_socket = None
+
+  @property
+  def connection(self):
+    return self._connection
 
 
 class ServerConnector(object):
@@ -78,27 +73,23 @@ class ServerConnector(object):
     self._check_for_connection_to_server()
 
   def _check_for_connection_to_server(self):
-    global current_connection
-    assert current_connection is None
-
     connection_socket = client_socket_factory()
     if connection_socket:
       self._connection = Connection(connection_socket)
-      current_connection = self._connection
 
   def disconnect(self):
-    global current_connection
-    assert current_connection is self._connection
-
     if self._connection is not None:
       self._connection.close()
       self._connection = None
-      current_connection = None
+
+  @property
+  def connection(self):
+    return self._connection
 
 
 def send_message(message):
-  if current_connection:
-    current_connection.send_message(message)
+  if connector.connection:
+    connector.connection.send_message(message)
 
 def send_contents_update():
   contents = get_current_contents(vim=vim)
@@ -115,8 +106,8 @@ def update_contents_and_cursor():
   send_cursor_position()
 
 def process_messages():
-  if current_connection:
-    for message in current_connection.received_messages:
+  if connector.connection:
+    for message in connector.connection.received_messages:
       message_handler.process(message)
 
 def handle_take_control():
