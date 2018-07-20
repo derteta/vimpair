@@ -154,11 +154,12 @@ function! _VimpairStopObserving()
 endfunction
 
 
+let g:VimpairTimerInterval = 200
 let g:_VimpairTimer = ""
 
 function! _VimpairStartTimer()
   let g:_VimpairTimer = timer_start(
-        \  200,
+        \  g:VimpairTimerInterval,
         \  {-> execute("python process_messages()", "")},
         \  {'repeat': -1}
         \)

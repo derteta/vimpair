@@ -4,6 +4,8 @@ execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 
+let g:VimpairTimerInterval = 1
+
 function! _VPClientTest_set_up()
   execute("vnew")
   python fake_socket = Mock()
@@ -35,7 +37,7 @@ function! _VPClientTest_assert_has_sent_message(expected)
 endfunction
 
 function! _VPClientTest_wait_for_timer()
-  sleep 300m
+  sleep 3m
 endfunction
 
 
