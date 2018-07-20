@@ -17,6 +17,7 @@ from connection import (
 from protocol import (
   generate_contents_update_messages,
   generate_cursor_position_message,
+  generate_take_control_message,
   MessageHandler,
 )
 from vim_interface import (
@@ -123,6 +124,10 @@ def handle_take_control():
   vim.command('call _VimpairStopTimer()')
   vim.command('call _VimpairStartObserving()')
 
+def hand_over_control():
+  vim.command('call _VimpairStopObserving()')
+  send_message(generate_take_control_message())
+
 message_handler_factory = lambda : MessageHandler(
   update_contents=partial(apply_contents_update, vim=vim),
   apply_cursor_position=partial(apply_cursor_position, vim=vim),
@@ -208,4 +213,9 @@ endfunction
 
 function! VimpairClientUpdate(timer)
   python process_messages()
+endfunction
+
+
+function! VimpairHandover()
+  python hand_over_control()
 endfunction

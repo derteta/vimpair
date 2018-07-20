@@ -1,4 +1,4 @@
-python from mock import Mock
+python from mock import call, Mock
 execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
@@ -20,6 +20,11 @@ endfunction
 function! _VPServerTest_assert_has_sent_message(expected)
   python fake_socket.sendall.assert_any_call(
     \ vim.eval('a:expected'))
+endfunction
+
+function! _VPServerTest_assert_has_not_sent_message(expected)
+  python sendall_calls = fake_socket.sendall.call_args_list
+  python assert not call(vim.eval('a:expected')) in sendall_calls
 endfunction
 
 
@@ -91,5 +96,21 @@ function! VPServerTest_sends_buffer_contents_on_copy_paste()
   call _VPServerTest_assert_has_sent_message(
     \ "VIMPAIR_FULL_UPDATE|45|This is just some text\nThis is just some text")
 endfunction
+
+function! VPServerTest_sends_take_control_message_for_handover()
+  call VimpairHandover()
+
+  call _VPServerTest_assert_has_sent_message("VIMPAIR_TAKE_CONTROL")
+endfunction
+
+function! VPServerTest_does_not_send_updates_after_handover()
+  call VimpairHandover()
+
+  execute("normal iThis is just some text")
+
+  call _VPServerTest_assert_has_not_sent_message(
+    \ "VIMPAIR_FULL_UPDATE|22|This is just some text")
+endfunction
+
 
 call VPTestTools_run_tests("VPServerTest")

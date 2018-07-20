@@ -64,6 +64,9 @@ def generate_cursor_position_message(line, column):
     column = max(0, column or 0)
     return '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
 
+def generate_take_control_message():
+    return TAKE_CONTROL_MESSAGE
+
 
 class MessageHandler(object):
 
