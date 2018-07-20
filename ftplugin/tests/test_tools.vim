@@ -5,15 +5,23 @@
 " '_<namespace>_tear_down (the leading '_' allows distinction from the tests).
 
 
-function! s:VPTestTools_get_tests(namespace)
+function! s:VPTestTools_funcref_string_to_name(funcref_string)
   let prefix_len = 9
+  let num_quotes = 2
+  " Each entry has the following format: 'function <name>()',
+  " but we're only interested in <name>
+  return strpart(
+    \ a:funcref_string,
+    \ prefix_len,
+    \ strlen(a:funcref_string) - prefix_len - num_quotes
+    \)
+endfunction
+
+
+function! s:VPTestTools_get_tests(namespace)
   let result = []
   for Test in split(execute("function /^" . a:namespace), '\n')
-    " Each entry has the following format: 'function <name>()',
-    " but we're only interested in <name>
-    let result += [
-      \ function(strpart(Test, prefix_len, strlen(Test) - prefix_len - 2))
-      \]
+    let result += [s:VPTestTools_funcref_string_to_name(Test)]
   endfor
   return l:result
 endfunction
@@ -24,8 +32,9 @@ function! VPTestTools_run_tests(namespace)
   let Tear_down = function("_" . a:namespace . "_tear_down")
 
   for Test in s:VPTestTools_get_tests(a:namespace)
+    echo "Running ".Test
     call Set_up()
-    call Test()
+    call function(Test)()
     call Tear_down()
   endfor
 endfunction
