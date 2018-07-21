@@ -64,14 +64,14 @@ def process_messages():
 
 def handle_take_control():
   show_status_message('You are in control now!')
-  vim.command('call _VimpairStopTimer()')
-  vim.command('call _VimpairStartObserving()')
+  vim.command('call s:VimpairStopTimer()')
+  vim.command('call s:VimpairStartObserving()')
 
 def hand_over_control():
   show_status_message('Handing over control')
-  vim.command('call _VimpairStopObserving()')
+  vim.command('call s:VimpairStopObserving()')
   send_message(generate_take_control_message())
-  vim.command('call _VimpairStartTimer()')
+  vim.command('call s:VimpairStartTimer()')
 EOF
 
 
@@ -79,7 +79,7 @@ let g:VimpairShowStatusMessages = 1
 let g:VimpairTimerInterval = 200
 
 
-function! _VimpairStartObserving()
+function! s:VimpairStartObserving()
   augroup VimpairEditorObservers
     autocmd TextChanged * python send_contents_update()
     autocmd TextChangedI * python send_contents_update()
@@ -89,32 +89,32 @@ function! _VimpairStartObserving()
   augroup END
 endfunction
 
-function! _VimpairStopObserving()
+function! s:VimpairStopObserving()
   augroup VimpairEditorObservers
     autocmd!
   augroup END
 endfunction
 
 
-let g:_VimpairTimer = ""
+let s:VimpairTimer = ""
 
-function! _VimpairStartTimer()
-  let g:_VimpairTimer = timer_start(
+function! s:VimpairStartTimer()
+  let s:VimpairTimer = timer_start(
         \  g:VimpairTimerInterval,
         \  {-> execute("python process_messages()", "")},
         \  {'repeat': -1}
         \)
 endfunction
 
-function! _VimpairStopTimer()
-  if g:_VimpairTimer != ""
-    call timer_stop(g:_VimpairTimer)
-    let g:_VimpairTimer = ""
+function! s:VimpairStopTimer()
+  if s:VimpairTimer != ""
+    call timer_stop(s:VimpairTimer)
+    let s:VimpairTimer = ""
   endif
 endfunction
 
 
-function! _VimpairInitialize()
+function! s:VimpairInitialize()
   augroup VimpairCleanup
     autocmd VimLeavePre * call s:VimpairCleanup()
   augroup END
@@ -126,9 +126,9 @@ function! _VimpairInitialize()
         \)
 endfunction
 
-function! _VimpairCleanup()
-  call _VimpairStopTimer()
-  call _VimpairStopObserving()
+function! s:VimpairCleanup()
+  call s:VimpairStopTimer()
+  call s:VimpairStopObserving()
 
   augroup VimpairCleanup
     autocmd!
@@ -140,28 +140,28 @@ endfunction
 
 
 function! VimpairServerStart()
-  call _VimpairInitialize()
+  call s:VimpairInitialize()
 
   python connector = ClientConnector(server_socket_factory)
 
-  call _VimpairStartObserving()
+  call s:VimpairStartObserving()
 endfunction
 
 function! VimpairServerStop()
-  call _VimpairCleanup()
+  call s:VimpairCleanup()
 endfunction
 
 
 function! VimpairClientStart()
-  call _VimpairInitialize()
+  call s:VimpairInitialize()
 
   python connector = ServerConnector(client_socket_factory)
 
-  call _VimpairStartTimer()
+  call s:VimpairStartTimer()
 endfunction
 
 function! VimpairClientStop()
-  call _VimpairCleanup()
+  call s:VimpairCleanup()
 endfunction
 
 

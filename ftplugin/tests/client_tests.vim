@@ -19,12 +19,12 @@ function! _VPClientTest_tear_down()
   execute("q!")
 endfunction
 
-function! _VPClientTest_set_received_messages(messages)
+function! s:VPClientTest_set_received_messages(messages)
   python received_messages = list(vim.eval('a:messages'))
   python fake_socket.recv = lambda *a: received_messages.pop()
 endfunction
 
-function! _VPClientTest_assert_buffer_has_contents(expected)
+function! s:VPClientTest_assert_buffer_has_contents(expected)
 python << EOF
 actual = list(vim.current.buffer)
 expected = list(vim.eval('a:expected'))
@@ -32,46 +32,46 @@ assert actual == expected, actual
 EOF
 endfunction
 
-function! _VPClientTest_assert_has_sent_message(expected)
+function! s:VPClientTest_assert_has_sent_message(expected)
   python fake_socket.sendall.assert_any_call(
     \ vim.eval('a:expected'))
 endfunction
 
-function! _VPClientTest_wait_for_timer()
+function! s:VPClientTest_wait_for_timer()
   sleep 3m
 endfunction
 
 
 function! VPClientTest_applies_received_contents_updates()
-  call _VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|16|This is line one"])
+  call s:VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|16|This is line one"])
 
-  call _VPClientTest_wait_for_timer()
+  call s:VPClientTest_wait_for_timer()
 
-  call _VPClientTest_assert_buffer_has_contents(["This is line one"])
+  call s:VPClientTest_assert_buffer_has_contents(["This is line one"])
 endfunction
 
 function! VPClientTest_received_contents_updates_overwrite_existing_contents()
   execute("normal i1")
   execute("normal o2")
-  call _VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|16|This is line one"])
+  call s:VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|16|This is line one"])
 
-  call _VPClientTest_wait_for_timer()
+  call s:VPClientTest_wait_for_timer()
 
-  call _VPClientTest_assert_buffer_has_contents(["This is line one"])
+  call s:VPClientTest_assert_buffer_has_contents(["This is line one"])
 endfunction
 
 function! VPClientTest_received_cursor_position_is_applied()
   execute("normal iThis is line one")
   execute("normal oThis is line two")
-  call _VPClientTest_set_received_messages(["VIMPAIR_CURSOR_POSITION|0|8"])
+  call s:VPClientTest_set_received_messages(["VIMPAIR_CURSOR_POSITION|0|8"])
 
-  call _VPClientTest_wait_for_timer()
+  call s:VPClientTest_wait_for_timer()
 
   python assert vim.current.window.cursor == (1, 8)
 endfunction
 
 function! VPClientTest_applies_large_contents_received_in_multiple_messages()
-  call _VPClientTest_set_received_messages([
+  call s:VPClientTest_set_received_messages([
         \ "VIMPAIR_CONTENTS_END|25|5678901234567890123456789",
         \ "VIMPAIR_CONTENTS_PART|998|789012345678901234567890123456789012345678901" .
         \ "234567890123456789012345678901234567890123456789012345678901234567890" .
@@ -105,9 +105,9 @@ function! VPClientTest_applies_large_contents_received_in_multiple_messages()
         \ "12345678901234567890123456789012345678901234567890123456",
         \])
 
-  call _VPClientTest_wait_for_timer()
+  call s:VPClientTest_wait_for_timer()
 
-  call _VPClientTest_assert_buffer_has_contents([
+  call s:VPClientTest_assert_buffer_has_contents([
     \ "01234567890123456789012345678901234567890123456789012345678901234567" .
     \ "89012345678901234567890123456789012345678901234567890123456789012345" .
     \ "67890123456789012345678901234567890123456789012345678901234567890123" .
@@ -141,18 +141,18 @@ function! VPClientTest_applies_large_contents_received_in_multiple_messages()
 endfunction
 
 function! VPClientTest_send_buffer_contents_after_taking_control()
-  call _VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
-  call _VPClientTest_wait_for_timer()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
+  call s:VPClientTest_wait_for_timer()
 
   execute("normal iThis is just some text")
 
-  call _VPClientTest_assert_has_sent_message(
+  call s:VPClientTest_assert_has_sent_message(
     \ "VIMPAIR_FULL_UPDATE|22|This is just some text")
 endfunction
 
 function! VPClientTest_send_cursor_position_after_taking_control()
-  call _VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
-  call _VPClientTest_wait_for_timer()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
+  call s:VPClientTest_wait_for_timer()
 
   execute("normal iThis is line one")
   execute("normal oThis is line two")
@@ -162,17 +162,17 @@ function! VPClientTest_send_cursor_position_after_taking_control()
   " so we need to manually trigger it
   execute("doautocmd CursorMoved")
 
-  call _VPClientTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|0|8")
+  call s:VPClientTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|0|8")
 endfunction
 
 function! VPClientTest_doesnt_apply_received_contents_updates_after_taking_control()
-  call _VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
-  call _VPClientTest_wait_for_timer()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
+  call s:VPClientTest_wait_for_timer()
 
-  call _VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|16|This is line one"])
-  call _VPClientTest_wait_for_timer()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|16|This is line one"])
+  call s:VPClientTest_wait_for_timer()
 
-  call _VPClientTest_assert_buffer_has_contents([""])
+  call s:VPClientTest_assert_buffer_has_contents([""])
 endfunction
 
 
