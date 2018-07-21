@@ -3,6 +3,7 @@ execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 
+let g:VimpairShowStatusMessages = 0
 let g:VimpairTimerInterval = 1
 
 function! _VPServerTest_set_up()

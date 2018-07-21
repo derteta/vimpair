@@ -35,6 +35,10 @@ connector = None
 message_handler = None
 
 
+def show_status_message(message):
+  if int(vim.eval('g:VimpairShowStatusMessages')) != 0:
+    print 'Vimpair:', message
+
 def send_message(message):
   if connector.connection:
     connector.connection.send_message(message)
@@ -59,14 +63,20 @@ def process_messages():
       message_handler.process(message)
 
 def handle_take_control():
+  show_status_message('You are in control now!')
   vim.command('call _VimpairStopTimer()')
   vim.command('call _VimpairStartObserving()')
 
 def hand_over_control():
+  show_status_message('Handing over control')
   vim.command('call _VimpairStopObserving()')
   send_message(generate_take_control_message())
   vim.command('call _VimpairStartTimer()')
 EOF
+
+
+let g:VimpairShowStatusMessages = 1
+let g:VimpairTimerInterval = 200
 
 
 function! _VimpairStartObserving()
@@ -86,7 +96,6 @@ function! _VimpairStopObserving()
 endfunction
 
 
-let g:VimpairTimerInterval = 200
 let g:_VimpairTimer = ""
 
 function! _VimpairStartTimer()
