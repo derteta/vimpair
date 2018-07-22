@@ -7,6 +7,7 @@ UPDATE_START_PREFIX = 'VIMPAIR_CONTENTS_START'
 UPDATE_PART_PREFIX = 'VIMPAIR_CONTENTS_PART'
 UPDATE_END_PREFIX = 'VIMPAIR_CONTENTS_END'
 CURSOR_POSITION_PREFIX = 'VIMPAIR_CURSOR_POSITION'
+TAKE_CONTROL_MESSAGE = 'VIMPAIR_TAKE_CONTROL'
 
 MESSAGE_LENGTH = 1024
 _LENGTH_DIGITS_AND_MARKERS = 3 + 2
@@ -63,15 +64,24 @@ def generate_cursor_position_message(line, column):
     column = max(0, column or 0)
     return '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
 
+def generate_take_control_message():
+    return TAKE_CONTROL_MESSAGE
+
 
 class MessageHandler(object):
 
-    def __init__(self, update_contents=None, apply_cursor_position=None):
+    def __init__(
+        self,
+        update_contents=None,
+        apply_cursor_position=None,
+        take_control=None,
+    ):
         self._leftover = ''
         self._current_message = ''
         self._pending_update = None
         self._update_contents = _ensure_callable(update_contents)
         self._apply_cursor_position = _ensure_callable(apply_cursor_position)
+        self._take_control = _ensure_callable(take_control)
 
     def _remove_from_message(self, string):
         self._current_message = self._current_message.replace(string, '')
@@ -153,15 +163,25 @@ class MessageHandler(object):
         self._leftover = self._current_message.replace(self._leftover, '')
         self._current_message = ''
 
+    @contextmanager
+    def _taking_control_when_told(self):
+        do_take_control = TAKE_CONTROL_MESSAGE in self._current_message
+        self._current_message = self._current_message.split(TAKE_CONTROL_MESSAGE)[0]
+        yield
+        if do_take_control:
+            self._take_control()
+            self._pending_update = None
+
     def process(self, message):
         if message:
             with self._current_message_being(message):
-                for processing_call in (
-                    self._contents_update,
-                    self._cursor_position,
-                    self._contents_start,
-                    self._contents_part,
-                    self._contents_end,
-                ):
-                    while processing_call():
-                        pass
+                with self._taking_control_when_told():
+                    for processing_call in (
+                        self._contents_update,
+                        self._cursor_position,
+                        self._contents_start,
+                        self._contents_part,
+                        self._contents_end,
+                    ):
+                        while processing_call():
+                            pass

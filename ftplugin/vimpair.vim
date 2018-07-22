@@ -10,13 +10,14 @@ if not python_path in sys.path:
 from functools import partial
 
 from connection import (
-  Connection,
   create_client_socket,
   create_server_socket,
 )
+from connectors import ClientConnector, ServerConnector
 from protocol import (
   generate_contents_update_messages,
   generate_cursor_position_message,
+  generate_take_control_message,
   MessageHandler,
 )
 from vim_interface import (
@@ -29,121 +30,141 @@ from vim_interface import (
 
 server_socket_factory = create_server_socket
 client_socket_factory = create_client_socket
-connections = []
-server_socket = None
+
+connector = None
 message_handler = None
 
-def check_for_new_connection_to_client():
-  global connections
-  connection_socket, _ = server_socket.accept() \
-    if server_socket \
-    else (None, '')
-  if connection_socket:
-    connections.append(Connection(connection_socket))
 
-def check_for_connection_to_server():
-  global connections
-  connection_socket = client_socket_factory()
-  if connection_socket:
-    connections.append(Connection(connection_socket))
+def show_status_message(message):
+  if int(vim.eval('g:VimpairShowStatusMessages')) != 0:
+    print 'Vimpair:', message
+
+def send_message(message):
+  if connector.connection:
+    connector.connection.send_message(message)
 
 def send_contents_update():
   contents = get_current_contents(vim=vim)
   messages = generate_contents_update_messages(contents)
-  for connection in connections:
-    for message in messages:
-      connection.send_message(message)
+  for message in messages:
+    send_message(message)
 
 def send_cursor_position():
   line, column = get_cursor_position(vim=vim)
-  message = generate_cursor_position_message(line, column)
-  for connection in connections:
-    connection.send_message(message)
+  send_message(generate_cursor_position_message(line, column))
+
+def update_contents_and_cursor():
+  send_contents_update()
+  send_cursor_position()
 
 def process_messages():
-  if connections:
-    for message in connections[0].received_messages:
+  if connector.connection:
+    for message in connector.connection.received_messages:
       message_handler.process(message)
 
+def handle_take_control():
+  show_status_message('You are in control now!')
+  vim.command('call s:VimpairStopTimer()')
+  vim.command('call s:VimpairStartObserving()')
+
+def hand_over_control():
+  show_status_message('Handing over control')
+  vim.command('call s:VimpairStopObserving()')
+  send_message(generate_take_control_message())
+  vim.command('call s:VimpairStartTimer()')
 EOF
 
-let g:_VimpairClientTimer = ""
+
+let g:VimpairShowStatusMessages = 1
+let g:VimpairTimerInterval = 200
 
 
-function! VimpairServerStart()
-  augroup VimpairServer
+function! s:VimpairStartObserving()
+  augroup VimpairEditorObservers
     autocmd TextChanged * python send_contents_update()
     autocmd TextChangedI * python send_contents_update()
-    autocmd InsertLeave * call VimpairServerUpdate()
+    autocmd InsertLeave * python update_contents_and_cursor()
     autocmd CursorMoved * python send_cursor_position()
     autocmd CursorMovedI * python send_cursor_position()
-    autocmd VimLeavePre * call VimpairServerStop()
   augroup END
-
-python << EOF
-server_socket = server_socket_factory()
-
-if server_socket:
-  connections = []
-  check_for_new_connection_to_client()
-EOF
 endfunction
 
-function! VimpairServerStop()
-python << EOF
-for connection in connections:
-  connection.close()
-connections = None
-
-if server_socket:
-  server_socket.close()
-  server_socket = None
-EOF
-
-  augroup VimpairServer
+function! s:VimpairStopObserving()
+  augroup VimpairEditorObservers
     autocmd!
   augroup END
 endfunction
 
-function! VimpairServerUpdate()
-  python send_contents_update()
-  python send_cursor_position()
+
+let s:VimpairTimer = ""
+
+function! s:VimpairStartTimer()
+  let s:VimpairTimer = timer_start(
+        \  g:VimpairTimerInterval,
+        \  {-> execute("python process_messages()", "")},
+        \  {'repeat': -1}
+        \)
+endfunction
+
+function! s:VimpairStopTimer()
+  if s:VimpairTimer != ""
+    call timer_stop(s:VimpairTimer)
+    let s:VimpairTimer = ""
+  endif
+endfunction
+
+
+function! s:VimpairInitialize()
+  augroup VimpairCleanup
+    autocmd VimLeavePre * call s:VimpairCleanup()
+  augroup END
+
+  python message_handler = MessageHandler(
+        \  update_contents=partial(apply_contents_update, vim=vim),
+        \  apply_cursor_position=partial(apply_cursor_position, vim=vim),
+        \  take_control=handle_take_control,
+        \)
+endfunction
+
+function! s:VimpairCleanup()
+  call s:VimpairStopTimer()
+  call s:VimpairStopObserving()
+
+  augroup VimpairCleanup
+    autocmd!
+  augroup END
+
+  python message_handler = None
+  python connector.disconnect()
+endfunction
+
+
+function! VimpairServerStart()
+  call s:VimpairInitialize()
+
+  python connector = ClientConnector(server_socket_factory)
+
+  call s:VimpairStartObserving()
+endfunction
+
+function! VimpairServerStop()
+  call s:VimpairCleanup()
 endfunction
 
 
 function! VimpairClientStart()
-python << EOF
-connections = []
-message_handler = MessageHandler(
-  update_contents=partial(apply_contents_update, vim=vim),
-  apply_cursor_position=partial(apply_cursor_position, vim=vim),
-)
+  call s:VimpairInitialize()
 
-check_for_connection_to_server()
-EOF
-  augroup VimpairClient
-    autocmd VimLeavePre * call VimpairClientStop()
-  augroup END
+  python connector = ServerConnector(client_socket_factory)
 
-  let g:_VimpairClientTimer = timer_start(
-        \ 200,
-        \ 'VimpairClientUpdate',
-        \ {'repeat': -1})
+  call s:VimpairStartTimer()
 endfunction
 
 function! VimpairClientStop()
-  if g:_VimpairClientTimer != ""
-    call timer_stop(g:_VimpairClientTimer)
-    let g:_VimpairClientTimer = ""
-  endif
-  python connections = None
-  python message_handler = None
-
-  augroup VimpairClient
-    autocmd!
-  augroup END
+  call s:VimpairCleanup()
 endfunction
 
-function! VimpairClientUpdate(timer)
-  python process_messages()
+
+function! VimpairHandover()
+  python hand_over_control()
 endfunction
