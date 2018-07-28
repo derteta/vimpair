@@ -431,6 +431,15 @@ class MessageHandlerSplitContentsTests(TestCase):
 
         self.update_contents.assert_not_called()
 
+    def test_previous_end_is_not_used_with_next_start(self):
+        message = UPDATE_END_PREFIX + '|1|0' \
+            + UPDATE_START_PREFIX + '|2|1 ' \
+            + UPDATE_END_PREFIX + '|1|2'
+
+        self.handler.process(message)
+
+        self.update_contents.assert_called_once_with('1 2')
+
 
 class MessageHandlerSplitMessageTests(TestCase):
 

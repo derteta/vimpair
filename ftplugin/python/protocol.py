@@ -17,6 +17,14 @@ _UPDATE_START_CONTENTS_LENGTH = \
 _UPDATE_PART_CONTENTS_LENGTH = \
     MESSAGE_LENGTH - len(UPDATE_PART_PREFIX) - _LENGTH_DIGITS_AND_MARKERS
 
+_ANY_PREFIX = re.compile('%s|%s|%s|%s|%s' % (
+    FULL_UPDATE_PREFIX,
+    CURSOR_POSITION_PREFIX,
+    UPDATE_START_PREFIX,
+    UPDATE_PART_PREFIX,
+    UPDATE_END_PREFIX,
+))
+
 _noop = lambda *a, **k: None
 _ensure_callable = lambda call: call if callable(call) else _noop
 
@@ -82,6 +90,13 @@ class MessageHandler(object):
         self._update_contents = _ensure_callable(update_contents)
         self._apply_cursor_position = _ensure_callable(apply_cursor_position)
         self._take_control = _ensure_callable(take_control)
+        self._prefix_to_process_call = {
+            FULL_UPDATE_PREFIX: self._contents_update,
+            CURSOR_POSITION_PREFIX: self._cursor_position,
+            UPDATE_START_PREFIX: self._contents_start,
+            UPDATE_PART_PREFIX: self._contents_part,
+            UPDATE_END_PREFIX: self._contents_end,
+        }
 
     def _remove_from_message(self, string):
         self._current_message = self._current_message.replace(string, '')
@@ -173,15 +188,15 @@ class MessageHandler(object):
             self._pending_update = None
 
     def process(self, message):
-        if message:
-            with self._current_message_being(message):
-                with self._taking_control_when_told():
-                    for processing_call in (
-                        self._contents_update,
-                        self._cursor_position,
-                        self._contents_start,
-                        self._contents_part,
-                        self._contents_end,
-                    ):
-                        while processing_call():
-                            pass
+        with self._current_message_being(message):
+            with self._taking_control_when_told():
+                while True:
+                    match = _ANY_PREFIX.search(self._current_message)
+                    if match:
+                        process_call = self._prefix_to_process_call[match.group()]
+                        if not process_call():
+                            # If there is an error in the matched message (e.g., negative cursor position),
+                            # process_call will return False. So we discard the message here.
+                            self._current_message = self._current_message[match.start() + len(match.group()):]
+                    else:
+                        break
