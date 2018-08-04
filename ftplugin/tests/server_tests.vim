@@ -44,13 +44,21 @@ endfunction
 
 
 function! VPServerTest_sends_buffer_contents_on_connection()
+  call s:VPServerTest_assert_has_sent_message("VIMPAIR_FULL_UPDATE|0|")
+endfunction
+
+function! VPServerTest_sends_cursor_position_on_connection()
+  call s:VPServerTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|0|0")
+endfunction
+
+function! VPServerTest_sends_buffer_contents_on_change()
   execute("normal iThis is just some text")
 
   call s:VPServerTest_assert_has_sent_message(
     \ "VIMPAIR_FULL_UPDATE|22|This is just some text")
 endfunction
 
-function! VPServerTest_sends_cursor_position_on_connection()
+function! VPServerTest_sends_cursor_position_on_change()
   execute("normal iThis is line one")
   execute("normal oThis is line two")
 

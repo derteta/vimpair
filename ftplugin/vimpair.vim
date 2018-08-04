@@ -145,6 +145,7 @@ function! VimpairServerStart()
   python connector = ClientConnector(server_socket_factory)
 
   call s:VimpairStartObserving()
+  python update_contents_and_cursor()
 endfunction
 
 function! VimpairServerStop()
