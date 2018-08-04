@@ -57,7 +57,7 @@ def generate_contents_update_messages(contents):
         return first_part_size
 
     messages = []
-    if contents:
+    if contents is not None:
         num_parts = get_number_of_parts(contents)
         for index in xrange(0, num_parts):
             prefix = get_part_prefix(index, num_parts)

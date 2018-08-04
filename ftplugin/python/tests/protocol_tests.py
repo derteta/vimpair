@@ -26,8 +26,11 @@ class GenerateContentsUpdateMessageTests(TestCase):
     def test_returns_no_messages_if_contents_is_none(self):
         self.assertEqual(generate_contents_update_messages(None), [])
 
-    def test_returns_no_messages_if_contents_is_empty(self):
-        self.assertEqual(generate_contents_update_messages(''), [])
+    def test_returns_one_messages_if_contents_is_empty(self):
+        self.assertEqual(
+            generate_contents_update_messages(''),
+            ['VIMPAIR_FULL_UPDATE|0|'],
+        )
 
     def test_contents_update_message_starts_with_expected_prefix(self):
         message = first(generate_contents_update_messages('Some contents'))
