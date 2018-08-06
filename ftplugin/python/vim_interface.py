@@ -41,3 +41,12 @@ def apply_cursor_position(line, column, vim=None):
             vim.current.window.cursor = (line + 1, column)
     except AttributeError:
         pass
+
+
+def switch_to_buffer(filename=None, vim=None):
+    try:
+        vim.command(
+            'silent e' + (' %s' % filename if filename else 'new')
+        )
+    except AttributeError:
+        pass

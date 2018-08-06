@@ -6,6 +6,7 @@ from ..vim_interface import (
     apply_cursor_position,
     get_current_contents,
     get_cursor_position,
+    switch_to_buffer,
 )
 
 
@@ -162,3 +163,25 @@ class ApplyCursorPositionTests(TestCase):
         apply_cursor_position(0, 10, vim=vim)
 
         self.assertEqual(vim.current.window.cursor[1], 10)
+
+
+class SwitchToBufferTests(TestCase):
+
+    def test_noop_without_vim(self):
+        vim = None
+        switch_to_buffer(vim=vim)
+
+    def test_creates_new_buffer_with_vim(self):
+        vim = Mock()
+
+        switch_to_buffer(vim=vim)
+
+        vim.command.assert_called_with('silent enew')
+
+    def test_provides_new_buffer_with_given_filename_with_vim(self):
+        filename = '.vimrc'
+        vim = Mock()
+
+        switch_to_buffer(filename=filename, vim=vim)
+
+        vim.command.assert_called_with('silent e %s' % filename)
