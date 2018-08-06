@@ -27,14 +27,23 @@ function! s:VPTestTools_get_tests(namespace)
 endfunction
 
 
+function! s:VPTestTools_show_errors()
+  for error in v:errors
+     :echoerr error
+  endfor
+  let v:errors = []
+endfunction
+
+
 function! VPTestTools_run_tests(namespace)
   let Set_up = function("_" . a:namespace . "_set_up")
   let Tear_down = function("_" . a:namespace . "_tear_down")
 
   for Test in s:VPTestTools_get_tests(a:namespace)
     echo "Running ".Test
-    call Set_up()
+    call l:Set_up()
     call function(Test)()
-    call Tear_down()
+    call l:Tear_down()
+    call s:VPTestTools_show_errors()
   endfor
 endfunction
