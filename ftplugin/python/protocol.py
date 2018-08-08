@@ -8,6 +8,7 @@ UPDATE_PART_PREFIX = 'VIMPAIR_CONTENTS_PART'
 UPDATE_END_PREFIX = 'VIMPAIR_CONTENTS_END'
 CURSOR_POSITION_PREFIX = 'VIMPAIR_CURSOR_POSITION'
 TAKE_CONTROL_MESSAGE = 'VIMPAIR_TAKE_CONTROL'
+FILE_CHANGE_PREFIX = 'VIMPAIR_FILE_CHANGE'
 
 MESSAGE_LENGTH = 1024
 _LENGTH_DIGITS_AND_MARKERS = 3 + 2
@@ -17,12 +18,13 @@ _UPDATE_START_CONTENTS_LENGTH = \
 _UPDATE_PART_CONTENTS_LENGTH = \
     MESSAGE_LENGTH - len(UPDATE_PART_PREFIX) - _LENGTH_DIGITS_AND_MARKERS
 
-_ANY_PREFIX = re.compile('%s|%s|%s|%s|%s' % (
+_ANY_PREFIX = re.compile('%s|%s|%s|%s|%s|%s' % (
     FULL_UPDATE_PREFIX,
     CURSOR_POSITION_PREFIX,
     UPDATE_START_PREFIX,
     UPDATE_PART_PREFIX,
     UPDATE_END_PREFIX,
+    FILE_CHANGE_PREFIX,
 ))
 
 _noop = lambda *a, **k: None
@@ -83,6 +85,7 @@ class MessageHandler(object):
         update_contents=None,
         apply_cursor_position=None,
         take_control=None,
+        file_changed=None,
     ):
         self._leftover = ''
         self._current_message = ''
@@ -90,12 +93,14 @@ class MessageHandler(object):
         self._update_contents = _ensure_callable(update_contents)
         self._apply_cursor_position = _ensure_callable(apply_cursor_position)
         self._take_control = _ensure_callable(take_control)
+        self._file_changed = _ensure_callable(file_changed)
         self._prefix_to_process_call = {
             FULL_UPDATE_PREFIX: self._contents_update,
             CURSOR_POSITION_PREFIX: self._cursor_position,
             UPDATE_START_PREFIX: self._contents_start,
             UPDATE_PART_PREFIX: self._contents_part,
             UPDATE_END_PREFIX: self._contents_end,
+            FILE_CHANGE_PREFIX: self._file_change,
         }
 
     def _remove_from_message(self, string):
@@ -170,6 +175,17 @@ class MessageHandler(object):
                 self._apply_cursor_position(line, column)
                 self._pending_update = None
             return group != None
+
+    def _file_change(self):
+        pattern = '%s\|(\d+)\|(.*)' % FILE_CHANGE_PREFIX
+        with self._find_length_and_contents(pattern) as (length, filename):
+            if filename != None:
+                self._remove_from_message(
+                    '%s|%d|%s' % (FILE_CHANGE_PREFIX, length, filename)
+                )
+                self._file_changed()
+                self._pending_update = None
+            return filename != None
 
     @contextmanager
     def _current_message_being(self, message):

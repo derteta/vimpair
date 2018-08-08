@@ -536,3 +536,17 @@ class MessageHandlerTakeControlTests(TestCase):
         self.handler.process(message)
 
         context.expected_callback(self).assert_not_called()
+
+
+class MessageHandlerFileChangeTests(TestCase):
+
+    def setUp(self):
+        self.file_changed = Mock()
+        self.handler = MessageHandler(file_changed=self.file_changed)
+
+
+    def test_calls_file_changed_when_receiving_file_change_message(self):
+        # not checking for FILE_CHANGE_PREFIX to prevent false positives
+        self.handler.process('VIMPAIR_FILE_CHANGE|0|')
+
+        self.file_changed.assert_called()
