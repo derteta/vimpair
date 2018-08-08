@@ -183,7 +183,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (FILE_CHANGE_PREFIX, length, filename)
                 )
-                self._file_changed()
+                self._file_changed(filename=filename)
                 self._pending_update = None
             return filename != None
 

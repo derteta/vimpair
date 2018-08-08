@@ -13,6 +13,7 @@ from ..protocol import (
     UPDATE_PART_PREFIX,
     UPDATE_END_PREFIX,
     TAKE_CONTROL_MESSAGE,
+    FILE_CHANGE_PREFIX,
 )
 
 
@@ -550,3 +551,9 @@ class MessageHandlerFileChangeTests(TestCase):
         self.handler.process('VIMPAIR_FILE_CHANGE|0|')
 
         self.file_changed.assert_called()
+
+    def test_calls_file_changed_with_given_filename(self):
+        filename = 'ATextFile.txt'
+        self.handler.process('%s|13|%s' % (FILE_CHANGE_PREFIX, filename))
+
+        self.file_changed.assert_called_with(filename=filename)
