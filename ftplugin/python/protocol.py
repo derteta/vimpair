@@ -195,8 +195,10 @@ class MessageHandler(object):
                     if match:
                         process_call = self._prefix_to_process_call[match.group()]
                         if not process_call():
-                            # If there is an error in the matched message (e.g., negative cursor position),
-                            # process_call will return False. So we discard the message here.
-                            self._current_message = self._current_message[match.start() + len(match.group()):]
+                            # If there is an error in the matched message
+                            # (e.g., negative cursor position), process_call will
+                            # return False. So we discard the message here.
+                            self._current_message = \
+                                self._current_message[match.start() + len(match.group()):]
                     else:
                         break
