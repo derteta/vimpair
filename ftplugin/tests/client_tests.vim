@@ -175,5 +175,12 @@ function! VPClientTest_doesnt_apply_received_contents_updates_after_taking_contr
   call s:VPClientTest_assert_buffer_has_contents([""])
 endfunction
 
+function! VPClientTest_creates_new_buffer_with_filename_on_receiving_file_changed_message()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_FILE_CHANGE|11|SomeFile.py"])
+
+  call s:VPClientTest_wait_for_timer()
+
+  call assert_equal("SomeFile.py", expand("%:t"))
+endfunction
 
 call VPTestTools_run_tests("VPClientTest")

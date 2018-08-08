@@ -25,6 +25,7 @@ from vim_interface import (
   apply_cursor_position,
   get_current_contents,
   get_cursor_position,
+  switch_to_buffer,
 )
 
 
@@ -123,6 +124,7 @@ function! s:VimpairInitialize()
         \  update_contents=partial(apply_contents_update, vim=vim),
         \  apply_cursor_position=partial(apply_cursor_position, vim=vim),
         \  take_control=handle_take_control,
+        \  file_changed=partial(switch_to_buffer, vim=vim),
         \)
 endfunction
 
