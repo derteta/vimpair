@@ -17,6 +17,7 @@ from connectors import ClientConnector, ServerConnector
 from protocol import (
   generate_contents_update_messages,
   generate_cursor_position_message,
+  generate_file_change_message,
   generate_take_control_message,
   MessageHandler,
 )
@@ -24,6 +25,7 @@ from vim_interface import (
   apply_contents_update,
   apply_cursor_position,
   get_current_contents,
+  get_current_filename,
   get_cursor_position,
   switch_to_buffer,
 )
@@ -57,6 +59,9 @@ def send_cursor_position():
 def update_contents_and_cursor():
   send_contents_update()
   send_cursor_position()
+
+def send_file_change():
+  send_message(generate_file_change_message(get_current_filename(vim=vim)))
 
 def process_messages():
   if connector.connection:
@@ -147,6 +152,7 @@ function! VimpairServerStart()
   python connector = ClientConnector(server_socket_factory)
 
   call s:VimpairStartObserving()
+  python send_file_change()
   python update_contents_and_cursor()
 endfunction
 

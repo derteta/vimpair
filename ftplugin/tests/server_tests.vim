@@ -51,6 +51,10 @@ function! VPServerTest_sends_cursor_position_on_connection()
   call s:VPServerTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|0|0")
 endfunction
 
+function! VPServerTest_sends_file_change_on_connection()
+  call s:VPServerTest_assert_has_sent_message("VIMPAIR_FILE_CHANGE|0|")
+endfunction
+
 function! VPServerTest_sends_buffer_contents_on_change()
   execute("normal iThis is just some text")
 
