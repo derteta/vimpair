@@ -5,6 +5,7 @@ from ..vim_interface import (
     apply_contents_update,
     apply_cursor_position,
     get_current_contents,
+    get_current_filename,
     get_cursor_position,
     switch_to_buffer,
 )
@@ -185,3 +186,17 @@ class SwitchToBufferTests(TestCase):
         switch_to_buffer(filename=filename, vim=vim)
 
         vim.command.assert_called_with('silent e %s' % filename)
+
+
+class GetCurrentFilenameTests(TestCase):
+
+    def test_returns_empty_string_without_vim(self):
+        vim = None
+        self.assertEqual(get_current_filename(vim=vim), '')
+
+    def tests_returns_filename_with_extension_with_vim(self):
+        vim = Mock()
+
+        get_current_filename(vim=vim)
+
+        vim.eval.assert_called_with('expand("%:t")')

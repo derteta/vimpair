@@ -8,6 +8,14 @@ def get_current_contents(vim=None):
     return reduce(lambda l1, l2: l1 + '\n' + l2, lines or [''])
 
 
+def get_current_filename(vim=None):
+    ''' returns name and extension of the current file '''
+    try:
+        return vim.eval('expand("%:t")')
+    except AttributeError:
+        return ''
+
+
 def get_cursor_position(vim=None):
     ''' returns a tuple (line, column) of the cursor position '''
     try:
