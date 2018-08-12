@@ -8,6 +8,7 @@ from ..protocol import (
     FULL_UPDATE_PREFIX,
     generate_contents_update_messages,
     generate_cursor_position_message,
+    generate_file_change_message,
     MessageHandler,
     UPDATE_START_PREFIX,
     UPDATE_PART_PREFIX,
@@ -197,6 +198,34 @@ class GenerateCursorPositionMessageTests(TestCase):
         message = generate_cursor_position_message(0, 111)
 
         self.assertTrue(message.endswith('|0|111'), message)
+
+
+class GenerateFileChangeMessageTests(TestCase):
+
+    def assert_filename_leads_to_payload_and_end(self, filename, expected_end):
+        message = generate_file_change_message(filename)
+
+        self.assertTrue(message.endswith(expected_end), message)
+
+
+    def test_message_starts_with_expected_prefix(self):
+        message = generate_file_change_message('')
+
+        # not checking for FILE_CHANGE_PREFIX to prevent false positives
+        self.assertTrue(message.startswith('VIMPAIR_FILE_CHANGE'), message)
+
+    def test_message_has_zero_payload_for_empty_filename(self):
+        self.assert_filename_leads_to_payload_and_end('', '|0|')
+
+    def test_message_has_correct_payload_for_non_empty_filename(self):
+        filename = 'SomeFileName.ext'
+        self.assert_filename_leads_to_payload_and_end(filename, '|16|%s' % filename)
+
+    def test_message_treats_whitespaces_as_empty(self):
+        self.assert_filename_leads_to_payload_and_end('     ', '|0|')
+
+    def test_message_treats_none_as_empty(self):
+        self.assert_filename_leads_to_payload_and_end(None, '|0|')
 
 
 @ddt
