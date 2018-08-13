@@ -92,6 +92,7 @@ function! s:VimpairStartObserving()
     autocmd InsertLeave * python update_contents_and_cursor()
     autocmd CursorMoved * python send_cursor_position()
     autocmd CursorMovedI * python send_cursor_position()
+    autocmd BufEnter * python send_file_change()
   augroup END
 endfunction
 
