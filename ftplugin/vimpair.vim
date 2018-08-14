@@ -38,6 +38,16 @@ connector = None
 message_handler = None
 
 
+class SendFileChange(object):
+
+  enabled = True
+
+  def __call__(self):
+    if self.enabled:
+      message = generate_file_change_message(get_current_filename(vim=vim))
+      send_message(message)
+
+
 def show_status_message(message):
   if int(vim.eval('g:VimpairShowStatusMessages')) != 0:
     print 'Vimpair:', message
@@ -60,8 +70,7 @@ def update_contents_and_cursor():
   send_contents_update()
   send_cursor_position()
 
-def send_file_change():
-  send_message(generate_file_change_message(get_current_filename(vim=vim)))
+send_file_change = SendFileChange()
 
 def process_messages():
   if connector.connection:
@@ -167,6 +176,7 @@ function! VimpairClientStart()
 
   python connector = ServerConnector(client_socket_factory)
 
+  python send_file_change.enabled = False
   call s:VimpairStartTimer()
 endfunction
 

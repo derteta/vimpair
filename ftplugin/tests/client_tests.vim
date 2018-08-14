@@ -183,4 +183,14 @@ function! VPClientTest_creates_new_buffer_with_filename_on_receiving_file_change
   call assert_equal("SomeFile.py", expand("%:t"))
 endfunction
 
+function! VPClientTest_doesnt_send_file_change_on_change_after_taking_control()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
+  call s:VPClientTest_wait_for_timer()
+
+  execute("silent e " . expand("%:p:h") . "/../README.md")
+
+  python fake_socket.sendall.assert_not_called()
+endfunction
+
+
 call VPTestTools_run_tests("VPClientTest")
