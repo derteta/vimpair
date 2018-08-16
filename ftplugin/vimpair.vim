@@ -17,6 +17,7 @@ from connectors import ClientConnector, ServerConnector
 from protocol import (
   generate_contents_update_messages,
   generate_cursor_position_message,
+  generate_file_change_message,
   generate_take_control_message,
   MessageHandler,
 )
@@ -24,7 +25,9 @@ from vim_interface import (
   apply_contents_update,
   apply_cursor_position,
   get_current_contents,
+  get_current_filename,
   get_cursor_position,
+  switch_to_buffer,
 )
 
 
@@ -33,6 +36,16 @@ client_socket_factory = create_client_socket
 
 connector = None
 message_handler = None
+
+
+class SendFileChange(object):
+
+  enabled = True
+
+  def __call__(self):
+    if self.enabled:
+      message = generate_file_change_message(get_current_filename(vim=vim))
+      send_message(message)
 
 
 def show_status_message(message):
@@ -56,6 +69,8 @@ def send_cursor_position():
 def update_contents_and_cursor():
   send_contents_update()
   send_cursor_position()
+
+send_file_change = SendFileChange()
 
 def process_messages():
   if connector.connection:
@@ -86,6 +101,7 @@ function! s:VimpairStartObserving()
     autocmd InsertLeave * python update_contents_and_cursor()
     autocmd CursorMoved * python send_cursor_position()
     autocmd CursorMovedI * python send_cursor_position()
+    autocmd BufEnter * python send_file_change()
   augroup END
 endfunction
 
@@ -123,6 +139,7 @@ function! s:VimpairInitialize()
         \  update_contents=partial(apply_contents_update, vim=vim),
         \  apply_cursor_position=partial(apply_cursor_position, vim=vim),
         \  take_control=handle_take_control,
+        \  file_changed=partial(switch_to_buffer, vim=vim),
         \)
 endfunction
 
@@ -145,6 +162,7 @@ function! VimpairServerStart()
   python connector = ClientConnector(server_socket_factory)
 
   call s:VimpairStartObserving()
+  python send_file_change()
   python update_contents_and_cursor()
 endfunction
 
@@ -158,6 +176,7 @@ function! VimpairClientStart()
 
   python connector = ServerConnector(client_socket_factory)
 
+  python send_file_change.enabled = False
   call s:VimpairStartTimer()
 endfunction
 

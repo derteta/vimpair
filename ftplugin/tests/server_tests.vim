@@ -51,6 +51,10 @@ function! VPServerTest_sends_cursor_position_on_connection()
   call s:VPServerTest_assert_has_sent_message("VIMPAIR_CURSOR_POSITION|0|0")
 endfunction
 
+function! VPServerTest_sends_file_change_on_connection()
+  call s:VPServerTest_assert_has_sent_message("VIMPAIR_FILE_CHANGE|0|")
+endfunction
+
 function! VPServerTest_sends_buffer_contents_on_change()
   execute("normal iThis is just some text")
 
@@ -143,6 +147,12 @@ function! VPServerTest_applies_received_updates_after_handover()
   call s:VPServerTest_wait_for_timer()
 
   call s:VPServerTest_assert_buffer_has_contents(["This is line one"])
+endfunction
+
+function! VPServerTest_sends_file_change_on_change()
+  execute("silent e " . expand("%:p:h") . "/../README.md")
+
+  call s:VPServerTest_assert_has_sent_message("VIMPAIR_FILE_CHANGE|9|README.md")
 endfunction
 
 

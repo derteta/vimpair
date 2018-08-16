@@ -24,6 +24,11 @@ function! s:VPClientTest_set_received_messages(messages)
   python fake_socket.recv = lambda *a: received_messages.pop()
 endfunction
 
+function! s:VPClientTest_take_control()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
+  call s:VPClientTest_wait_for_timer()
+endfunction
+
 function! s:VPClientTest_assert_buffer_has_contents(expected)
 python << EOF
 actual = list(vim.current.buffer)
@@ -141,8 +146,7 @@ function! VPClientTest_applies_large_contents_received_in_multiple_messages()
 endfunction
 
 function! VPClientTest_send_buffer_contents_after_taking_control()
-  call s:VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
-  call s:VPClientTest_wait_for_timer()
+  call s:VPClientTest_take_control()
 
   execute("normal iThis is just some text")
 
@@ -151,8 +155,7 @@ function! VPClientTest_send_buffer_contents_after_taking_control()
 endfunction
 
 function! VPClientTest_send_cursor_position_after_taking_control()
-  call s:VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
-  call s:VPClientTest_wait_for_timer()
+  call s:VPClientTest_take_control()
 
   execute("normal iThis is line one")
   execute("normal oThis is line two")
@@ -166,13 +169,28 @@ function! VPClientTest_send_cursor_position_after_taking_control()
 endfunction
 
 function! VPClientTest_doesnt_apply_received_contents_updates_after_taking_control()
-  call s:VPClientTest_set_received_messages(["VIMPAIR_TAKE_CONTROL"])
-  call s:VPClientTest_wait_for_timer()
+  call s:VPClientTest_take_control()
 
   call s:VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|16|This is line one"])
   call s:VPClientTest_wait_for_timer()
 
   call s:VPClientTest_assert_buffer_has_contents([""])
+endfunction
+
+function! VPClientTest_creates_new_buffer_with_filename_on_receiving_file_changed_message()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_FILE_CHANGE|11|SomeFile.py"])
+
+  call s:VPClientTest_wait_for_timer()
+
+  call assert_equal("SomeFile.py", expand("%:t"))
+endfunction
+
+function! VPClientTest_doesnt_send_file_change_on_change_after_taking_control()
+  call s:VPClientTest_take_control()
+
+  execute("silent e " . expand("%:p:h") . "/../README.md")
+
+  python fake_socket.sendall.assert_not_called()
 endfunction
 
 
