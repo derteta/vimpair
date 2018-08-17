@@ -11,11 +11,11 @@ function! _VPClientTest_set_up()
   execute("vnew")
   python fake_socket = Mock()
   python client_socket_factory = lambda: fake_socket
-  call VimpairClientStart()
+  VimpairClientStart
 endfunction
 
 function! _VPClientTest_tear_down()
-  call VimpairClientStop()
+  VimpairClientStop
   execute("q!")
 endfunction
 

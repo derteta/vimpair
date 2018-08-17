@@ -12,11 +12,11 @@ function! _VPServerTest_set_up()
   python server_socket = Mock()
   python server_socket.accept = Mock(return_value=(fake_socket, ''))
   python server_socket_factory = lambda: server_socket
-  call VimpairServerStart()
+  VimpairServerStart
 endfunction
 
 function! _VPServerTest_tear_down()
-  call VimpairServerStop()
+  VimpairServerStop
   execute("q!")
 endfunction
 
@@ -125,13 +125,13 @@ function! VPServerTest_sends_buffer_contents_on_copy_paste()
 endfunction
 
 function! VPServerTest_sends_take_control_message_for_handover()
-  call VimpairHandover()
+  VimpairHandover
 
   call s:VPServerTest_assert_has_sent_message("VIMPAIR_TAKE_CONTROL")
 endfunction
 
 function! VPServerTest_does_not_send_updates_after_handover()
-  call VimpairHandover()
+  VimpairHandover
 
   execute("normal iThis is just some text")
 
@@ -140,7 +140,7 @@ function! VPServerTest_does_not_send_updates_after_handover()
 endfunction
 
 function! VPServerTest_applies_received_updates_after_handover()
-  call VimpairHandover()
+  VimpairHandover
   python received_messages = ["VIMPAIR_FULL_UPDATE|16|This is line one"]
   python fake_socket.recv = lambda *a: received_messages.pop()
 

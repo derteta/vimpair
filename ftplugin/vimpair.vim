@@ -188,3 +188,10 @@ endfunction
 function! VimpairHandover()
   python hand_over_control()
 endfunction
+
+
+command! -nargs=0 VimpairServerStart :call VimpairServerStart()
+command! -nargs=0 VimpairServerStop :call VimpairServerStop()
+command! -nargs=0 VimpairClientStart :call VimpairClientStart()
+command! -nargs=0 VimpairClientStop :call VimpairClientStop()
+command! -nargs=0 VimpairHandover :call VimpairHandover()
