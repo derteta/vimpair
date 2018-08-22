@@ -185,7 +185,7 @@ class SwitchToBufferTests(TestCase):
 
         switch_to_buffer(filename=filename, vim=vim)
 
-        vim.command.assert_called_with('silent e %s' % filename)
+        vim.command.assert_called_with('silent e! %s' % filename)
 
 
 class GetCurrentFilenameTests(TestCase):
