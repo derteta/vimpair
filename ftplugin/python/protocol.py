@@ -86,7 +86,6 @@ class MessageHandler(object):
 
     def __init__(
         self,
-        apply_cursor_position=None,
         take_control=None,
         file_changed=None,
         callbacks=None,
@@ -95,7 +94,6 @@ class MessageHandler(object):
         self._current_message = ''
         self._pending_update = None
         self._callbacks=callbacks
-        self._apply_cursor_position = _ensure_callable(apply_cursor_position)
         self._take_control = _ensure_callable(take_control)
         self._file_changed = _ensure_callable(file_changed)
         self._prefix_to_process_call = {
@@ -178,7 +176,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
                 )
-                self._apply_cursor_position(line, column)
+                getattr(self._callbacks, 'apply_cursor_position', _noop)(line, column)
                 self._pending_update = None
             return group != None
 

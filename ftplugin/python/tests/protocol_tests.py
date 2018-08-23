@@ -296,10 +296,9 @@ class MessageHandlerFullUpdateTests(TestCase):
 class MessageHandlerCursorPositionTests(TestCase):
 
     def setUp(self):
-        self.apply_cursor_position = Mock()
-        self.handler = MessageHandler(
-            apply_cursor_position=self.apply_cursor_position
-        )
+        self.callbacks = Mock()
+        self.callbacks.apply_cursor_position = Mock()
+        self.handler = MessageHandler(callbacks=self.callbacks)
 
 
     @data(
@@ -317,16 +316,9 @@ class MessageHandlerCursorPositionTests(TestCase):
     def test_calls_apply_cursor_position(self, context):
         self.handler.process(context.message)
 
-        self.apply_cursor_position.assert_called_with(
+        self.callbacks.apply_cursor_position.assert_called_with(
             *context.expected_coordinates
         )
-
-    def test_does_not_call_apply_cursor_position_if_it_is_not_callable(self):
-        # not checking for CURSOR_POSITION_PREFIX to prevent false positives
-        message = 'VIMPAIR_CURSOR_POSITION|22|33'
-
-        handler = MessageHandler(apply_cursor_position='apply_cursor_position')
-        handler.process(message)
 
     def test_calls_apply_cursor_position_for_multiple_values_in_one_message(self):
         message = CURSOR_POSITION_PREFIX + '|0|1' \
@@ -334,7 +326,7 @@ class MessageHandlerCursorPositionTests(TestCase):
 
         self.handler.process(message)
 
-        self.apply_cursor_position.assert_called_with(0, 2)
+        self.callbacks.apply_cursor_position.assert_called_with(0, 2)
 
     @data(
         TC('empty_message',       message=''),
@@ -355,7 +347,7 @@ class MessageHandlerCursorPositionTests(TestCase):
     def test_does_not_call_apply_cursor_position(self, context):
         self.handler.process(context.message)
 
-        self.apply_cursor_position.assert_not_called()
+        self.callbacks.apply_cursor_position.assert_not_called()
 
 
 @ddt
@@ -512,11 +504,10 @@ class MessageHandlerTakeControlTests(TestCase):
     def setUp(self):
         self.callbacks = Mock()
         self.callbacks.update_contents = Mock()
+        self.callbacks.apply_cursor_position = Mock()
         self.take_control = Mock()
-        self.apply_cursor_position = Mock()
         self.handler = MessageHandler(
             callbacks=self.callbacks,
-            apply_cursor_position=self.apply_cursor_position,
             take_control=self.take_control,
         )
 
@@ -531,7 +522,7 @@ class MessageHandlerTakeControlTests(TestCase):
         TC(
             'full_update',
             message=FULL_UPDATE_PREFIX + '|5|Short',
-            expected_callback=lambda s: s.callbacks.update_contents,
+            expected_callback=lambda s: s.update_contents,
         ),
         TC(
             'cursor',
@@ -544,13 +535,13 @@ class MessageHandlerTakeControlTests(TestCase):
 
         self.handler.process(message)
 
-        context.expected_callback(self).assert_called()
+        context.expected_callback(self.callbacks).assert_called()
 
     @data(
         TC(
             'full_update',
             message=FULL_UPDATE_PREFIX + '|5|Short',
-            expected_callback=lambda s: s.callbacks.update_contents,
+            expected_callback=lambda s: s.update_contents,
         ),
         TC(
             'cursor',
@@ -563,7 +554,7 @@ class MessageHandlerTakeControlTests(TestCase):
 
         self.handler.process(message)
 
-        context.expected_callback(self).assert_not_called()
+        context.expected_callback(self.callbacks).assert_not_called()
 
 
 class MessageHandlerFileChangeTests(TestCase):

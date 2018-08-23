@@ -92,6 +92,7 @@ def hand_over_control():
 class VimCallbacks(object):
 
     update_contents=partial(apply_contents_update, vim=vim)
+    apply_cursor_position=partial(apply_cursor_position, vim=vim)
 EOF
 
 
@@ -142,7 +143,6 @@ function! s:VimpairInitialize()
 
   python message_handler = MessageHandler(
         \  callbacks=VimCallbacks,
-        \  apply_cursor_position=partial(apply_cursor_position, vim=vim),
         \  take_control=handle_take_control,
         \  file_changed=partial(switch_to_buffer, vim=vim),
         \)
