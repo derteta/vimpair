@@ -94,6 +94,7 @@ class VimCallbacks(object):
     update_contents=partial(apply_contents_update, vim=vim)
     apply_cursor_position=partial(apply_cursor_position, vim=vim)
     take_control=partial(handle_take_control)
+    file_changed=partial(switch_to_buffer, vim=vim)
 EOF
 
 
@@ -142,10 +143,7 @@ function! s:VimpairInitialize()
     autocmd VimLeavePre * call s:VimpairCleanup()
   augroup END
 
-  python message_handler = MessageHandler(
-        \  callbacks=VimCallbacks,
-        \  file_changed=partial(switch_to_buffer, vim=vim),
-        \)
+  python message_handler = MessageHandler(callbacks=VimCallbacks)
 endfunction
 
 function! s:VimpairCleanup()

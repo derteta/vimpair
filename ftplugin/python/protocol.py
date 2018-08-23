@@ -84,16 +84,11 @@ def generate_take_control_message():
 
 class MessageHandler(object):
 
-    def __init__(
-        self,
-        file_changed=None,
-        callbacks=None,
-    ):
+    def __init__(self, callbacks=None):
         self._leftover = ''
         self._current_message = ''
         self._pending_update = None
         self._callbacks=callbacks
-        self._file_changed = _ensure_callable(file_changed)
         self._prefix_to_process_call = {
             FULL_UPDATE_PREFIX: self._contents_update,
             CURSOR_POSITION_PREFIX: self._cursor_position,
@@ -185,7 +180,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (FILE_CHANGE_PREFIX, length, filename)
                 )
-                self._file_changed(filename=filename)
+                getattr(self._callbacks, 'file_changed', _noop)(filename=filename)
                 self._pending_update = None
             return filename != None
 
