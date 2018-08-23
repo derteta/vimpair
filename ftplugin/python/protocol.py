@@ -86,7 +86,6 @@ class MessageHandler(object):
 
     def __init__(
         self,
-        take_control=None,
         file_changed=None,
         callbacks=None,
     ):
@@ -94,7 +93,6 @@ class MessageHandler(object):
         self._current_message = ''
         self._pending_update = None
         self._callbacks=callbacks
-        self._take_control = _ensure_callable(take_control)
         self._file_changed = _ensure_callable(file_changed)
         self._prefix_to_process_call = {
             FULL_UPDATE_PREFIX: self._contents_update,
@@ -204,7 +202,7 @@ class MessageHandler(object):
         self._current_message = self._current_message.split(TAKE_CONTROL_MESSAGE)[0]
         yield
         if do_take_control:
-            self._take_control()
+            getattr(self._callbacks, 'take_control', _noop)()
             self._pending_update = None
 
     def process(self, message):

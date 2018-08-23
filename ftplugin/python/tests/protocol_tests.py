@@ -505,18 +505,15 @@ class MessageHandlerTakeControlTests(TestCase):
         self.callbacks = Mock()
         self.callbacks.update_contents = Mock()
         self.callbacks.apply_cursor_position = Mock()
-        self.take_control = Mock()
-        self.handler = MessageHandler(
-            callbacks=self.callbacks,
-            take_control=self.take_control,
-        )
+        self.callbacks.take_control = Mock()
+        self.handler = MessageHandler(callbacks=self.callbacks)
 
 
     def test_calls_take_control_when_receiving_take_control_message(self):
         # not checking for TAKE_CONTROL_MESSAGE to prevent false positives
         self.handler.process('VIMPAIR_TAKE_CONTROL')
 
-        self.take_control.assert_called()
+        self.callbacks.take_control.assert_called()
 
     @data(
         TC(
