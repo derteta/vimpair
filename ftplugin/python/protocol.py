@@ -86,15 +86,15 @@ class MessageHandler(object):
 
     def __init__(
         self,
-        update_contents=None,
         apply_cursor_position=None,
         take_control=None,
         file_changed=None,
+        callbacks=None,
     ):
         self._leftover = ''
         self._current_message = ''
         self._pending_update = None
-        self._update_contents = _ensure_callable(update_contents)
+        self._callbacks=callbacks
         self._apply_cursor_position = _ensure_callable(apply_cursor_position)
         self._take_control = _ensure_callable(take_control)
         self._file_changed = _ensure_callable(file_changed)
@@ -131,7 +131,7 @@ class MessageHandler(object):
                     '%s|%d|%s' % (FULL_UPDATE_PREFIX, length, contents)
                 )
                 if length <= len(contents):
-                    self._update_contents(contents)
+                    getattr(self._callbacks, 'update_contents', _noop)(contents)
             return contents != None
 
     def _contents_start(self):
@@ -163,7 +163,9 @@ class MessageHandler(object):
                     '%s|%d|%s' % (UPDATE_END_PREFIX, length, contents)
                 )
                 if self._pending_update:
-                    self._update_contents(self._pending_update + contents)
+                    getattr(self._callbacks, 'update_contents', _noop)(
+                        self._pending_update + contents
+                    )
                 self._pending_update = None
             return contents != None
 

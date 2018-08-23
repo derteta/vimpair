@@ -87,6 +87,11 @@ def hand_over_control():
   vim.command('call s:VimpairStopObserving()')
   send_message(generate_take_control_message())
   vim.command('call s:VimpairStartTimer()')
+
+
+class VimCallbacks(object):
+
+    update_contents=partial(apply_contents_update, vim=vim)
 EOF
 
 
@@ -136,7 +141,7 @@ function! s:VimpairInitialize()
   augroup END
 
   python message_handler = MessageHandler(
-        \  update_contents=partial(apply_contents_update, vim=vim),
+        \  callbacks=VimCallbacks,
         \  apply_cursor_position=partial(apply_cursor_position, vim=vim),
         \  take_control=handle_take_control,
         \  file_changed=partial(switch_to_buffer, vim=vim),

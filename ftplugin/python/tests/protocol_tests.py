@@ -232,8 +232,9 @@ class GenerateFileChangeMessageTests(TestCase):
 class MessageHandlerFullUpdateTests(TestCase):
 
     def setUp(self):
-        self.update_contents = Mock()
-        self.handler = MessageHandler(update_contents=self.update_contents)
+        self.callbacks = Mock()
+        self.callbacks.update_contents = Mock()
+        self.handler = MessageHandler(callbacks=self.callbacks)
 
 
     def test_calls_update_contents_for_update_message(self):
@@ -242,7 +243,7 @@ class MessageHandlerFullUpdateTests(TestCase):
 
         self.handler.process(message)
 
-        self.update_contents.assert_called()
+        self.callbacks.update_contents.assert_called()
 
     def test_calls_update_contents_for_multiple_updates_in_one_message(self):
         message = FULL_UPDATE_PREFIX + '|14|Some Contents.' \
@@ -250,7 +251,7 @@ class MessageHandlerFullUpdateTests(TestCase):
 
         self.handler.process(message)
 
-        self.update_contents.assert_called_with('Short')
+        self.callbacks.update_contents.assert_called_with('Short')
 
     @data(
         TC('empty_contents',           length='|0|',  contents=''),
@@ -263,13 +264,7 @@ class MessageHandlerFullUpdateTests(TestCase):
 
         self.handler.process(message)
 
-        self.update_contents.assert_called_with(context.contents)
-
-    def test_does_not_call_update_contents_if_it_is_not_callable(self):
-        message = FULL_UPDATE_PREFIX + '|5|Short'
-
-        handler = MessageHandler(update_contents='update_contents')
-        handler.process(message)
+        self.callbacks.update_contents.assert_called_with(context.contents)
 
     @data(
         TC('empty_message',      message=''),
@@ -286,7 +281,7 @@ class MessageHandlerFullUpdateTests(TestCase):
     def test_does_not_call_update_contents(self, context):
         self.handler.process(context.message)
 
-        self.update_contents.assert_not_called()
+        self.callbacks.update_contents.assert_not_called()
 
     def test_calls_update_contents_if_update_is_preceded_by_cursor_position(self):
         self.handler.process(
@@ -294,7 +289,7 @@ class MessageHandlerFullUpdateTests(TestCase):
             % (CURSOR_POSITION_PREFIX, FULL_UPDATE_PREFIX)
         )
 
-        self.update_contents.assert_called_with('multiline\ncontent')
+        self.callbacks.update_contents.assert_called_with('multiline\ncontent')
 
 
 @ddt
@@ -367,19 +362,20 @@ class MessageHandlerCursorPositionTests(TestCase):
 class MessageHandlerSplitContentsTests(TestCase):
 
     def setUp(self):
-        self.update_contents = Mock()
-        self.handler = MessageHandler(update_contents=self.update_contents)
+        self.callbacks = Mock()
+        self.callbacks.update_contents = Mock()
+        self.handler = MessageHandler(callbacks=self.callbacks)
 
 
     def test_does_not_call_update_contents_when_receiving_only_contents_start(self):
         self.handler.process(UPDATE_START_PREFIX + '|15|First part of a')
 
-        self.update_contents.assert_not_called()
+        self.callbacks.update_contents.assert_not_called()
 
     def test_does_not_call_update_contents_when_receiving_only_contents_end(self):
         self.handler.process(UPDATE_END_PREFIX + '|16| longer message.')
 
-        self.update_contents.assert_not_called()
+        self.callbacks.update_contents.assert_not_called()
 
     def test_calls_update_contents_when_receiving_contents_start_and_end(self):
         for message in (
@@ -388,7 +384,7 @@ class MessageHandlerSplitContentsTests(TestCase):
         ):
             self.handler.process(message)
 
-        self.update_contents.assert_called_with('First part of a longer message.')
+        self.callbacks.update_contents.assert_called_with('First part of a longer message.')
 
     def test_calls_update_contents_once_when_receiving_matching_end(self):
         for message in (
@@ -398,7 +394,7 @@ class MessageHandlerSplitContentsTests(TestCase):
         ):
             self.handler.process(message)
 
-        self.update_contents.assert_called_once_with(
+        self.callbacks.update_contents.assert_called_once_with(
             'First part of a longer message.'
         )
 
@@ -410,7 +406,7 @@ class MessageHandlerSplitContentsTests(TestCase):
         ):
             self.handler.process(message)
 
-        self.update_contents.assert_called_once_with(
+        self.callbacks.update_contents.assert_called_once_with(
             'First part of a longer message.'
         )
 
@@ -422,7 +418,7 @@ class MessageHandlerSplitContentsTests(TestCase):
         ):
             self.handler.process(message)
 
-        self.update_contents.assert_called_once_with('1 2 3')
+        self.callbacks.update_contents.assert_called_once_with('1 2 3')
 
     def test_calls_update_contents_when_receiving_all_parts_in_one_message(self):
         message = UPDATE_START_PREFIX + '|2|1 ' \
@@ -432,7 +428,7 @@ class MessageHandlerSplitContentsTests(TestCase):
 
         self.handler.process(message)
 
-        self.update_contents.assert_called_once_with('1 2 3 4')
+        self.callbacks.update_contents.assert_called_once_with('1 2 3 4')
 
     def test_does_not_call_update_contents_for_part_and_end_without_start(self):
         for message in (
@@ -441,7 +437,7 @@ class MessageHandlerSplitContentsTests(TestCase):
         ):
             self.handler.process(message)
 
-        self.update_contents.assert_not_called()
+        self.callbacks.update_contents.assert_not_called()
 
     @data(
         TC('full_update', interrupting_message=FULL_UPDATE_PREFIX + '|5|Short'),
@@ -458,11 +454,11 @@ class MessageHandlerSplitContentsTests(TestCase):
             context.interrupting_message,
         ):
             self.handler.process(message)
-        self.update_contents.reset_mock()
+        self.callbacks.update_contents.reset_mock()
 
         self.handler.process(UPDATE_END_PREFIX + '|1|3')
 
-        self.update_contents.assert_not_called()
+        self.callbacks.update_contents.assert_not_called()
 
     def test_previous_end_is_not_used_with_next_start(self):
         message = UPDATE_END_PREFIX + '|1|0' \
@@ -471,14 +467,15 @@ class MessageHandlerSplitContentsTests(TestCase):
 
         self.handler.process(message)
 
-        self.update_contents.assert_called_once_with('1 2')
+        self.callbacks.update_contents.assert_called_once_with('1 2')
 
 
 class MessageHandlerSplitMessageTests(TestCase):
 
     def setUp(self):
-        self.update_contents = Mock()
-        self.handler = MessageHandler(update_contents=self.update_contents)
+        self.callbacks = Mock()
+        self.callbacks.update_contents = Mock()
+        self.handler = MessageHandler(callbacks=self.callbacks)
 
 
     def test_calls_update_contents_on_receiving_final_message_part(self):
@@ -487,7 +484,7 @@ class MessageHandlerSplitMessageTests(TestCase):
 
         self.handler.process(message[8:])
 
-        self.update_contents.assert_called_with('Short')
+        self.callbacks.update_contents.assert_called_with('Short')
 
     def test_interleaved_message_cancels_split_message(self):
         message = FULL_UPDATE_PREFIX + '|5|Short'
@@ -496,7 +493,7 @@ class MessageHandlerSplitMessageTests(TestCase):
 
         self.handler.process(message[8:])
 
-        self.update_contents.assert_not_called()
+        self.callbacks.update_contents.assert_not_called()
 
     def test_interleaved_split_message_cancels_first_split_message(self):
         message1 = FULL_UPDATE_PREFIX + '|5|Short'
@@ -506,18 +503,19 @@ class MessageHandlerSplitMessageTests(TestCase):
 
         self.handler.process(message1[8:])
 
-        self.update_contents.assert_not_called()
+        self.callbacks.update_contents.assert_not_called()
 
 
 @ddt
 class MessageHandlerTakeControlTests(TestCase):
 
     def setUp(self):
+        self.callbacks = Mock()
+        self.callbacks.update_contents = Mock()
         self.take_control = Mock()
-        self.update_contents = Mock()
         self.apply_cursor_position = Mock()
         self.handler = MessageHandler(
-            update_contents=self.update_contents,
+            callbacks=self.callbacks,
             apply_cursor_position=self.apply_cursor_position,
             take_control=self.take_control,
         )
@@ -533,7 +531,7 @@ class MessageHandlerTakeControlTests(TestCase):
         TC(
             'full_update',
             message=FULL_UPDATE_PREFIX + '|5|Short',
-            expected_callback=lambda s: s.update_contents,
+            expected_callback=lambda s: s.callbacks.update_contents,
         ),
         TC(
             'cursor',
@@ -552,7 +550,7 @@ class MessageHandlerTakeControlTests(TestCase):
         TC(
             'full_update',
             message=FULL_UPDATE_PREFIX + '|5|Short',
-            expected_callback=lambda s: s.update_contents,
+            expected_callback=lambda s: s.callbacks.update_contents,
         ),
         TC(
             'cursor',
