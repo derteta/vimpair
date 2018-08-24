@@ -228,12 +228,20 @@ class GenerateFileChangeMessageTests(TestCase):
         self.assert_filename_leads_to_payload_and_end(None, '|0|')
 
 
+class MockCallbacks(object):
+
+    def __init__(self):
+        self.update_contents = Mock()
+        self.apply_cursor_position = Mock()
+        self.take_control = Mock()
+        self.file_changed = Mock()
+
+
 @ddt
 class MessageHandlerFullUpdateTests(TestCase):
 
     def setUp(self):
-        self.callbacks = Mock()
-        self.callbacks.update_contents = Mock()
+        self.callbacks = MockCallbacks()
         self.handler = MessageHandler(callbacks=self.callbacks)
 
 
@@ -296,8 +304,7 @@ class MessageHandlerFullUpdateTests(TestCase):
 class MessageHandlerCursorPositionTests(TestCase):
 
     def setUp(self):
-        self.callbacks = Mock()
-        self.callbacks.apply_cursor_position = Mock()
+        self.callbacks = MockCallbacks()
         self.handler = MessageHandler(callbacks=self.callbacks)
 
 
@@ -354,8 +361,7 @@ class MessageHandlerCursorPositionTests(TestCase):
 class MessageHandlerSplitContentsTests(TestCase):
 
     def setUp(self):
-        self.callbacks = Mock()
-        self.callbacks.update_contents = Mock()
+        self.callbacks = MockCallbacks()
         self.handler = MessageHandler(callbacks=self.callbacks)
 
 
@@ -465,8 +471,7 @@ class MessageHandlerSplitContentsTests(TestCase):
 class MessageHandlerSplitMessageTests(TestCase):
 
     def setUp(self):
-        self.callbacks = Mock()
-        self.callbacks.update_contents = Mock()
+        self.callbacks = MockCallbacks()
         self.handler = MessageHandler(callbacks=self.callbacks)
 
 
@@ -502,10 +507,7 @@ class MessageHandlerSplitMessageTests(TestCase):
 class MessageHandlerTakeControlTests(TestCase):
 
     def setUp(self):
-        self.callbacks = Mock()
-        self.callbacks.update_contents = Mock()
-        self.callbacks.apply_cursor_position = Mock()
-        self.callbacks.take_control = Mock()
+        self.callbacks = MockCallbacks()
         self.handler = MessageHandler(callbacks=self.callbacks)
 
 
@@ -557,8 +559,7 @@ class MessageHandlerTakeControlTests(TestCase):
 class MessageHandlerFileChangeTests(TestCase):
 
     def setUp(self):
-        self.callbacks = Mock()
-        self.callbacks.file_changed = Mock()
+        self.callbacks = MockCallbacks()
         self.handler = MessageHandler(callbacks=self.callbacks)
 
 
