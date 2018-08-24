@@ -82,13 +82,22 @@ def generate_take_control_message():
     return TAKE_CONTROL_MESSAGE
 
 
+class NullCallbacks(object):
+
+    def __init__(self):
+        self.update_contents = _noop
+        self.apply_cursor_position = _noop
+        self.take_control = _noop
+        self.file_changed = _noop
+
+
 class MessageHandler(object):
 
     def __init__(self, callbacks=None):
         self._leftover = ''
         self._current_message = ''
         self._pending_update = None
-        self._callbacks=callbacks
+        self._callbacks = callbacks or NullCallbacks()
         self._prefix_to_process_call = {
             FULL_UPDATE_PREFIX: self._contents_update,
             CURSOR_POSITION_PREFIX: self._cursor_position,
@@ -122,7 +131,7 @@ class MessageHandler(object):
                     '%s|%d|%s' % (FULL_UPDATE_PREFIX, length, contents)
                 )
                 if length <= len(contents):
-                    getattr(self._callbacks, 'update_contents', _noop)(contents)
+                    self._callbacks.update_contents(contents)
             return contents != None
 
     def _contents_start(self):
@@ -154,9 +163,7 @@ class MessageHandler(object):
                     '%s|%d|%s' % (UPDATE_END_PREFIX, length, contents)
                 )
                 if self._pending_update:
-                    getattr(self._callbacks, 'update_contents', _noop)(
-                        self._pending_update + contents
-                    )
+                    self._callbacks.update_contents(self._pending_update + contents)
                 self._pending_update = None
             return contents != None
 
@@ -169,7 +176,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
                 )
-                getattr(self._callbacks, 'apply_cursor_position', _noop)(line, column)
+                self._callbacks.apply_cursor_position(line, column)
                 self._pending_update = None
             return group != None
 
@@ -180,7 +187,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (FILE_CHANGE_PREFIX, length, filename)
                 )
-                getattr(self._callbacks, 'file_changed', _noop)(filename=filename)
+                self._callbacks.file_changed(filename=filename)
                 self._pending_update = None
             return filename != None
 
@@ -197,7 +204,7 @@ class MessageHandler(object):
         self._current_message = self._current_message.split(TAKE_CONTROL_MESSAGE)[0]
         yield
         if do_take_control:
-            getattr(self._callbacks, 'take_control', _noop)()
+            self._callbacks.take_control()
             self._pending_update = None
 
     def process(self, message):
