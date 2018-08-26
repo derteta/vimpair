@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from os import path
 import re
 
 
@@ -74,9 +75,11 @@ def generate_cursor_position_message(line, column):
     column = max(0, column or 0)
     return '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
 
-def generate_file_change_message(filename):
-    filename = (filename or '').strip()
-    return '%s|%d|%s' % (FILE_CHANGE_PREFIX, len(filename), filename)
+def generate_file_change_message(filename, folderpath=None):
+    contents = (filename or '').strip()
+    if contents and folderpath:
+        contents = path.join(folderpath, contents)
+    return '%s|%d|%s' % (FILE_CHANGE_PREFIX, len(contents), contents)
 
 def generate_take_control_message():
     return TAKE_CONTROL_MESSAGE

@@ -1,6 +1,7 @@
 from unittest import TestCase
 from mock import Mock
 from ddt import data, ddt
+from os import path
 
 from .util import TestContext as TC
 from ..protocol import (
@@ -226,6 +227,21 @@ class GenerateFileChangeMessageTests(TestCase):
 
     def test_message_treats_none_as_empty(self):
         self.assert_filename_leads_to_payload_and_end(None, '|0|')
+
+    def test_calling_with_additional_path_adds_full_path_to_message(self):
+        filename = 'SomeFileName.ext'
+        folderpath = path.join('path', 'to', 'the', 'file')
+
+        message = generate_file_change_message(filename, folderpath=folderpath)
+
+        self.assertTrue(message.endswith(path.join(folderpath, filename)), message)
+
+    def test_additional_path_not_added_when_filename_is_empty(self):
+        folderpath = path.join('path', 'to', 'the', 'file')
+
+        message = generate_file_change_message('', folderpath=folderpath)
+
+        self.assertTrue(message.endswith('|0|'), message)
 
 
 class MockCallbacks(object):
