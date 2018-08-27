@@ -4,6 +4,7 @@ execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 
 let g:VimpairShowStatusMessages = 0
+let g:VimpairConcealFilePaths = 0
 let g:VimpairTimerInterval = 1
 
 function! _VPServerTest_set_up()
@@ -152,7 +153,9 @@ endfunction
 function! VPServerTest_sends_file_change_on_change()
   execute("silent e " . expand("%:p:h") . "/../README.md")
 
-  call s:VPServerTest_assert_has_sent_message("VIMPAIR_FILE_CHANGE|9|README.md")
+  let file_path = expand("%:p")
+  call s:VPServerTest_assert_has_sent_message(
+    \ "VIMPAIR_FILE_CHANGE|" . printf("%d", strlen(file_path)) . "|" . file_path)
 endfunction
 
 

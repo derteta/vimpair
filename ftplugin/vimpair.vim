@@ -26,6 +26,7 @@ from vim_interface import (
   apply_cursor_position,
   get_current_contents,
   get_current_filename,
+  get_current_path,
   get_cursor_position,
   switch_to_buffer,
 )
@@ -44,7 +45,12 @@ class SendFileChange(object):
 
   def __call__(self):
     if self.enabled:
-      message = generate_file_change_message(get_current_filename(vim=vim))
+      conceal_path = int(vim.eval('g:VimpairConcealFilePaths')) != 0
+      message = generate_file_change_message(
+        get_current_filename(vim=vim),
+        folderpath=get_current_path(vim=vim),
+        conceal_path=conceal_path,
+      )
       send_message(message)
 
 
@@ -94,6 +100,7 @@ EOF
 
 
 let g:VimpairShowStatusMessages = 1
+let g:VimpairConcealFilePaths = 1
 let g:VimpairTimerInterval = 200
 
 
