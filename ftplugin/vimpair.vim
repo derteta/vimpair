@@ -38,6 +38,7 @@ client_socket_factory = create_client_socket
 connector = None
 message_handler = None
 
+_vim_int = lambda name: int(vim.eval(name))
 
 class SendFileChange(object):
 
@@ -45,17 +46,16 @@ class SendFileChange(object):
 
   def __call__(self):
     if self.enabled:
-      conceal_path = int(vim.eval('g:VimpairConcealFilePaths')) != 0
       message = generate_file_change_message(
         get_current_filename(vim=vim),
         folderpath=get_current_path(vim=vim),
-        conceal_path=conceal_path,
+        conceal_path=_vim_int('g:VimpairConcealFilePaths') != 0,
       )
       send_message(message)
 
 
 def show_status_message(message):
-  if int(vim.eval('g:VimpairShowStatusMessages')) != 0:
+  if _vim_int('g:VimpairShowStatusMessages') != 0:
     print 'Vimpair:', message
 
 def send_message(message):
