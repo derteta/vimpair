@@ -2,6 +2,7 @@ from unittest import TestCase
 from mock import Mock
 from ddt import data, ddt
 from os import path
+from hashlib import sha224
 
 from .util import TestContext as TC
 from ..protocol import (
@@ -242,6 +243,19 @@ class GenerateFileChangeMessageTests(TestCase):
         message = generate_file_change_message('', folderpath=folderpath)
 
         self.assertTrue(message.endswith('|0|'), message)
+
+    def test_path_is_concealed_with_hash_when_specified(self):
+        filename = 'SomeFileName.ext'
+        folderpath = path.join('path', 'to', 'the', 'file')
+
+        message = generate_file_change_message(
+            filename,
+            folderpath=folderpath,
+            conceal_path=True,
+        )
+
+        concealed_path = sha224(folderpath).hexdigest()
+        self.assertTrue(message.endswith(path.join(concealed_path, filename)), message)
 
 
 class MockCallbacks(object):

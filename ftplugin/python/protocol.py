@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from hashlib import sha224
 from os import path
 import re
 
@@ -75,10 +76,13 @@ def generate_cursor_position_message(line, column):
     column = max(0, column or 0)
     return '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
 
-def generate_file_change_message(filename, folderpath=None):
+def generate_file_change_message(filename, folderpath=None, conceal_path=False):
     contents = (filename or '').strip()
     if contents and folderpath:
-        contents = path.join(folderpath, contents)
+        contents = path.join(
+            sha224(folderpath).hexdigest() if conceal_path else folderpath,
+            contents
+        )
     return '%s|%d|%s' % (FILE_CHANGE_PREFIX, len(contents), contents)
 
 def generate_take_control_message():
