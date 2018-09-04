@@ -8,7 +8,9 @@ let g:VimpairTimerInterval = 1
 
 function! _VPServerTest_set_up()
   execute("vnew")
+  python sendall_calls = []
   python fake_socket = Mock()
+  python fake_socket.sendall = lambda b: sendall_calls.append(b)
   python server_socket = Mock()
   python server_socket.accept = Mock(return_value=(fake_socket, ''))
   python server_socket_factory = lambda: server_socket
@@ -21,13 +23,11 @@ function! _VPServerTest_tear_down()
 endfunction
 
 function! s:VPServerTest_assert_has_sent_message(expected)
-  python fake_socket.sendall.assert_any_call(
-    \ vim.eval('a:expected'))
+  python assert vim.eval('a:expected') in sendall_calls
 endfunction
 
 function! s:VPServerTest_assert_has_not_sent_message(expected)
-  python sendall_calls = fake_socket.sendall.call_args_list
-  python assert not call(vim.eval('a:expected')) in sendall_calls
+  python assert not vim.eval('a:expected') in sendall_calls
 endfunction
 
 function! s:VPServerTest_assert_buffer_has_contents(expected)
