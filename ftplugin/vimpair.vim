@@ -52,6 +52,7 @@ class SendFileChange(object):
         conceal_path=_vim_int('g:VimpairConcealFilePaths') != 0,
       )
       send_message(message)
+      update_contents_and_cursor()
 
 
 def show_status_message(message):
@@ -170,7 +171,6 @@ function! VimpairServerStart()
 
   call s:VimpairStartObserving()
   python send_file_change()
-  python update_contents_and_cursor()
 endfunction
 
 function! VimpairServerStop()

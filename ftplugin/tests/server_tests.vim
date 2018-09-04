@@ -27,6 +27,10 @@ function! s:VPServerTest_assert_has_sent_message(expected)
   python assert vim.eval('a:expected') in sendall_calls
 endfunction
 
+function! s:VPServerTest_assert_has_sent_message_starting_with(expected)
+  python assert any([c.startswith(vim.eval('a:expected')) for c in sendall_calls])
+endfunction
+
 function! s:VPServerTest_assert_has_not_sent_message(expected)
   python assert not vim.eval('a:expected') in sendall_calls
 endfunction
@@ -156,6 +160,15 @@ function! VPServerTest_sends_file_change_on_change()
   let file_path = expand("%:p")
   call s:VPServerTest_assert_has_sent_message(
     \ "VIMPAIR_FILE_CHANGE|" . printf("%d", strlen(file_path)) . "|" . file_path)
+endfunction
+
+function! VPServerTest_sends_file_contents_on_file_change()
+  python sendall_calls = []
+
+  execute("silent e " . expand("%:p:h") . "/../.gitignore")
+
+  call s:VPServerTest_assert_has_sent_message_starting_with(
+    \ "VIMPAIR_FULL_UPDATE|")
 endfunction
 
 
