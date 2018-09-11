@@ -51,7 +51,7 @@ class SendFileChange(object):
         folderpath=get_current_path(vim=vim),
         conceal_path=_vim_int('g:VimpairConcealFilePaths') != 0,
       )
-      send_message(message)
+      connector.connection.send_message(message)
       update_contents_and_cursor()
 
 
@@ -59,19 +59,15 @@ def show_status_message(message):
   if _vim_int('g:VimpairShowStatusMessages') != 0:
     print 'Vimpair:', message
 
-def send_message(message):
-  if connector.connection:
-    connector.connection.send_message(message)
-
 def send_contents_update():
   contents = get_current_contents(vim=vim)
   messages = generate_contents_update_messages(contents)
   for message in messages:
-    send_message(message)
+    connector.connection.send_message(message)
 
 def send_cursor_position():
   line, column = get_cursor_position(vim=vim)
-  send_message(generate_cursor_position_message(line, column))
+  connector.connection.send_message(generate_cursor_position_message(line, column))
 
 def update_contents_and_cursor():
   send_contents_update()
@@ -87,7 +83,7 @@ def handle_take_control():
 def hand_over_control():
   show_status_message('Handing over control')
   vim.command('call s:VimpairStopObserving()')
-  send_message(generate_take_control_message())
+  connector.connection.send_message(generate_take_control_message())
   vim.command('call s:VimpairStartTimer()')
 
 
