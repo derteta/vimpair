@@ -4,6 +4,9 @@
 " The script is also required to provide '_<namespace>_set_up' and
 " '_<namespace>_tear_down (the leading '_' allows distinction from the tests).
 
+" To filter tests by name, set g:VPTestTools_name_filter accordingly. Only the
+" tests whose names match this filter string will be run.
+
 
 function! s:VPTestTools_funcref_string_to_name(funcref_string)
   let prefix_len = 9
@@ -21,7 +24,11 @@ endfunction
 function! s:VPTestTools_get_tests(namespace)
   let result = []
   for Test in split(execute("function /^" . a:namespace), '\n')
-    let result += [s:VPTestTools_funcref_string_to_name(Test)]
+    let l:test_name = s:VPTestTools_funcref_string_to_name(Test)
+    if !exists("g:VPTestTools_name_filter")
+      \ || match(l:test_name, g:VPTestTools_name_filter) >= 0
+      let result += [l:test_name]
+    endif
   endfor
   return l:result
 endfunction
