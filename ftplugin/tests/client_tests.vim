@@ -182,7 +182,10 @@ function! VPClientTest_creates_new_buffer_with_filename_on_receiving_file_change
 
   call s:VPClientTest_wait_for_timer()
 
-  call assert_equal("SomeFile.py", expand("%:t"))
+  " On Mac, we set up the session folder in /var/folders/..., but vim reports
+  " the buffer path as /private/var/folders/..., which is synonymous
+  python expected_file_path = session.prepend_folder("SomeFile.py")
+  python assert vim.eval('expand("%")').endswith(expected_file_path)
 endfunction
 
 function! VPClientTest_doesnt_send_file_change_on_change_after_taking_control()

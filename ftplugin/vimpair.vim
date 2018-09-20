@@ -21,6 +21,7 @@ from protocol import (
   generate_take_control_message,
   MessageHandler,
 )
+from session import Session
 from vim_interface import (
   apply_contents_update,
   apply_cursor_position,
@@ -31,6 +32,8 @@ from vim_interface import (
   switch_to_buffer,
 )
 
+
+session = None
 
 server_socket_factory = create_server_socket
 client_socket_factory = create_client_socket
@@ -86,13 +89,16 @@ def hand_over_control():
   connector.connection.send_message(generate_take_control_message())
   vim.command('call s:VimpairStartTimer()')
 
+def file_changed(filename):
+  switch_to_buffer(session.prepend_folder(filename), vim=vim)
 
 class VimCallbacks(object):
 
     update_contents=partial(apply_contents_update, vim=vim)
     apply_cursor_position=partial(apply_cursor_position, vim=vim)
     take_control=partial(handle_take_control)
-    file_changed=partial(switch_to_buffer, vim=vim)
+    file_changed=partial(file_changed)
+
 EOF
 
 
@@ -180,11 +186,13 @@ function! VimpairClientStart()
   python connector = ServerConnector(client_socket_factory)
 
   python send_file_change.enabled = False
+  python session = Session()
   call s:VimpairStartTimer()
 endfunction
 
 function! VimpairClientStop()
   call s:VimpairCleanup()
+  python session.end()
 endfunction
 
 
