@@ -72,11 +72,6 @@ def update_contents_and_cursor():
 
 send_file_change = SendFileChange()
 
-def process_messages():
-  if connector.connection:
-    for message in connector.connection.received_messages:
-      message_handler.process(message)
-
 def handle_take_control():
   show_status_message('You are in control now!')
   vim.command('call s:VimpairStopTimer()')
@@ -125,7 +120,9 @@ let s:VimpairTimer = ""
 function! s:VimpairStartTimer()
   let s:VimpairTimer = timer_start(
         \  g:VimpairTimerInterval,
-        \  {-> execute("python process_messages()", "")},
+        \  {-> execute(
+        \       "python message_handler.process(connector.connection.received_messages)",
+        \       "")},
         \  {'repeat': -1}
         \)
 endfunction

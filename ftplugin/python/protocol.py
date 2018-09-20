@@ -207,7 +207,11 @@ class MessageHandler(object):
             self._callbacks.take_control()
             self._pending_update = None
 
-    def process(self, message):
+    def process(self, messages):
+        for message in [messages] if isinstance(messages, basestring) else messages:
+            self._do_process(message)
+
+    def _do_process(self, message):
         with self._current_message_being(message):
             with self._taking_control_when_told():
                 while True:
