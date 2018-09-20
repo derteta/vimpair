@@ -62,6 +62,7 @@ def show_status_message(message):
   if _vim_int('g:VimpairShowStatusMessages') != 0:
     print 'Vimpair:', message
 
+
 def send_contents_update():
   contents = get_current_contents(vim=vim)
   messages = generate_contents_update_messages(contents)
@@ -78,26 +79,27 @@ def update_contents_and_cursor():
 
 send_file_change = SendFileChange()
 
-def handle_take_control():
-  show_status_message('You are in control now!')
-  vim.command('call s:VimpairStopTimer()')
-  vim.command('call s:VimpairStartObserving()')
-
 def hand_over_control():
   show_status_message('Handing over control')
   vim.command('call s:VimpairStopObserving()')
   connector.connection.send_message(generate_take_control_message())
   vim.command('call s:VimpairStartTimer()')
 
-def file_changed(filename):
-  switch_to_buffer(session.prepend_folder(filename), vim=vim)
 
 class VimCallbacks(object):
 
-    update_contents=partial(apply_contents_update, vim=vim)
-    apply_cursor_position=partial(apply_cursor_position, vim=vim)
-    take_control=partial(handle_take_control)
-    file_changed=partial(file_changed)
+  def __init__(self, vim=None):
+    self._vim = vim
+    self.update_contents = partial(apply_contents_update, vim=vim)
+    self.apply_cursor_position = partial(apply_cursor_position, vim=vim)
+
+  def take_control(self):
+    show_status_message('You are in control now!')
+    self._vim.command('call s:VimpairStopTimer()')
+    self._vim.command('call s:VimpairStartObserving()')
+
+  def file_changed(self, filename=None):
+    switch_to_buffer(session.prepend_folder(filename), vim=self._vim)
 
 EOF
 
@@ -150,7 +152,7 @@ function! s:VimpairInitialize()
     autocmd VimLeavePre * call s:VimpairCleanup()
   augroup END
 
-  python message_handler = MessageHandler(callbacks=VimCallbacks)
+  python message_handler = MessageHandler(callbacks=VimCallbacks(vim=vim))
 endfunction
 
 function! s:VimpairCleanup()
