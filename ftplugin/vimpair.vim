@@ -79,12 +79,6 @@ def update_contents_and_cursor():
 
 send_file_change = SendFileChange()
 
-def hand_over_control():
-  show_status_message('Handing over control')
-  vim.command('call s:VimpairStopObserving()')
-  connector.connection.send_message(generate_take_control_message())
-  vim.command('call s:VimpairStartTimer()')
-
 
 class VimCallbacks(object):
 
@@ -199,7 +193,10 @@ endfunction
 
 
 function! VimpairHandover()
-  python hand_over_control()
+  python show_status_message('Handing over control')
+  call s:VimpairStopObserving()
+  python connector.connection.send_message(generate_take_control_message())
+  call s:VimpairStartTimer()
 endfunction
 
 
