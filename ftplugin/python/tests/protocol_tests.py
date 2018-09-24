@@ -17,6 +17,7 @@ from ..protocol import (
     UPDATE_END_PREFIX,
     TAKE_CONTROL_MESSAGE,
     FILE_CHANGE_PREFIX,
+    SAVE_FILE_MESSAGE,
 )
 
 
@@ -265,6 +266,7 @@ class MockCallbacks(object):
         self.apply_cursor_position = Mock()
         self.take_control = Mock()
         self.file_changed = Mock()
+        self.save_file = Mock()
 
 
 @ddt
@@ -604,3 +606,26 @@ class MessageHandlerFileChangeTests(TestCase):
         self.handler.process('%s|13|%s' % (FILE_CHANGE_PREFIX, filename))
 
         self.callbacks.file_changed.assert_called_with(filename=filename)
+
+
+class MessageHandlerSaveFileTests(TestCase):
+
+    def setUp(self):
+        self.callbacks = MockCallbacks()
+        self.handler = MessageHandler(callbacks=self.callbacks)
+
+
+    def test_calls_file_changed_when_receiving_file_change_message(self):
+        # not checking for SAVE_FILE_MESSAGE to prevent false positives
+        self.handler.process('VIMPAIR_SAVE_FILE')
+
+        self.callbacks.save_file.assert_called()
+
+    def test_receiving_file_change_message_doesnt_interrupt_split_update(self):
+        self.handler.process(
+            UPDATE_START_PREFIX + '|2|1 '
+            + SAVE_FILE_MESSAGE
+            + UPDATE_END_PREFIX + '|1|2'
+        )
+
+        self.callbacks.update_contents.assert_called_once_with('1 2')

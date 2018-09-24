@@ -1,4 +1,5 @@
 python from mock import Mock
+python import os
 python import vim
 execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
@@ -194,6 +195,17 @@ function! VPClientTest_doesnt_send_file_change_on_change_after_taking_control()
   execute("silent e " . expand("%:p:h") . "/../README.md")
 
   python fake_socket.sendall.assert_not_called()
+endfunction
+
+function! VPClientTest_saves_current_file_when_receiving_save_message()
+  call s:VPClientTest_set_received_messages(["VIMPAIR_FILE_CHANGE|18|Folder/SomeFile.py"])
+  call s:VPClientTest_wait_for_timer()
+
+  call s:VPClientTest_set_received_messages(["VIMPAIR_SAVE_FILE"])
+  call s:VPClientTest_wait_for_timer()
+
+  python expected_file_path = session.prepend_folder("Folder/SomeFile.py")
+  python assert os.path.exists(expected_file_path)
 endfunction
 
 

@@ -95,6 +95,15 @@ class VimCallbacks(object):
   def file_changed(self, filename=None):
     switch_to_buffer(session.prepend_folder(filename), vim=self._vim)
 
+  def save_file(self):
+    filename = get_current_filename(vim=self._vim)
+    if filename:
+      path = get_current_path(vim=self._vim)
+      os.makedirs(path)
+      filename_and_path = os.path.join(path, filename)
+      show_status_message('Saving file "%s"' % filename_and_path)
+      self._vim.command('silent write! ' + filename_and_path)
+
 EOF
 
 
