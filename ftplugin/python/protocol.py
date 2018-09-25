@@ -87,6 +87,9 @@ def generate_file_change_message(filename, folderpath=None, conceal_path=False):
         )
     return '%s|%d|%s' % (FILE_CHANGE_PREFIX, len(contents), contents)
 
+def generate_save_file_message():
+    return SAVE_FILE_MESSAGE
+
 def generate_take_control_message():
     return TAKE_CONTROL_MESSAGE
 

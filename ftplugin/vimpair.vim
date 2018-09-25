@@ -19,6 +19,7 @@ from protocol import (
   generate_cursor_position_message,
   generate_file_change_message,
   generate_take_control_message,
+  generate_save_file_message,
   MessageHandler,
 )
 from session import Session
@@ -77,6 +78,10 @@ def update_contents_and_cursor():
   send_contents_update()
   send_cursor_position()
 
+def send_save_file():
+  message = generate_save_file_message()
+  connector.connection.send_message(message)
+
 send_file_change = SendFileChange()
 
 
@@ -120,6 +125,7 @@ function! s:VimpairStartObserving()
     autocmd CursorMoved * python send_cursor_position()
     autocmd CursorMovedI * python send_cursor_position()
     autocmd BufEnter * python send_file_change()
+    autocmd BufWritePost * python send_save_file()
   augroup END
 endfunction
 

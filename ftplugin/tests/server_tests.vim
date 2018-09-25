@@ -171,5 +171,22 @@ function! VPServerTest_sends_file_contents_on_file_change()
     \ "VIMPAIR_FULL_UPDATE|")
 endfunction
 
+function! VPServerTest_sends_save_file_message_when_saving()
+  execute("silent e " . expand("%:p:h") . "/../README.md")
+
+  execute("silent w")
+
+  call s:VPServerTest_assert_has_sent_message("VIMPAIR_SAVE_FILE")
+endfunction
+
+function! VPServerTest_doesnt_send_save_file_message_when_saving_after_handover()
+  execute("silent e " . expand("%:p:h") . "/../README.md")
+  VimpairHandover
+
+  execute("silent w")
+
+  call s:VPServerTest_assert_has_not_sent_message("VIMPAIR_SAVE_FILE")
+endfunction
+
 
 call VPTestTools_run_tests("VPServerTest")
