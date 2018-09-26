@@ -4,6 +4,7 @@ execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 
 let g:VimpairShowStatusMessages = 0
+let g:VimpairConcealFilePaths = 0
 let g:VimpairTimerInterval = 1
 
 function! _VPServerTest_set_up()
@@ -24,6 +25,10 @@ endfunction
 
 function! s:VPServerTest_assert_has_sent_message(expected)
   python assert vim.eval('a:expected') in sendall_calls
+endfunction
+
+function! s:VPServerTest_assert_has_sent_message_starting_with(expected)
+  python assert any([c.startswith(vim.eval('a:expected')) for c in sendall_calls])
 endfunction
 
 function! s:VPServerTest_assert_has_not_sent_message(expected)
@@ -152,7 +157,35 @@ endfunction
 function! VPServerTest_sends_file_change_on_change()
   execute("silent e " . expand("%:p:h") . "/../README.md")
 
-  call s:VPServerTest_assert_has_sent_message("VIMPAIR_FILE_CHANGE|9|README.md")
+  let file_path = expand("%:p")
+  call s:VPServerTest_assert_has_sent_message(
+    \ "VIMPAIR_FILE_CHANGE|" . printf("%d", strlen(file_path)) . "|" . file_path)
+endfunction
+
+function! VPServerTest_sends_file_contents_on_file_change()
+  python sendall_calls = []
+
+  execute("silent e " . expand("%:p:h") . "/../.gitignore")
+
+  call s:VPServerTest_assert_has_sent_message_starting_with(
+    \ "VIMPAIR_FULL_UPDATE|")
+endfunction
+
+function! VPServerTest_sends_save_file_message_when_saving()
+  execute("silent e " . expand("%:p:h") . "/../README.md")
+
+  execute("silent w")
+
+  call s:VPServerTest_assert_has_sent_message("VIMPAIR_SAVE_FILE")
+endfunction
+
+function! VPServerTest_doesnt_send_save_file_message_when_saving_after_handover()
+  execute("silent e " . expand("%:p:h") . "/../README.md")
+  VimpairHandover
+
+  execute("silent w")
+
+  call s:VPServerTest_assert_has_not_sent_message("VIMPAIR_SAVE_FILE")
 endfunction
 
 

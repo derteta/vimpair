@@ -43,20 +43,28 @@ def create_client_socket():
         return sock
 
 
+class NullSocket(object):
+
+    close = _noop
+    sendall = _noop
+    recv = _noop
+
+
 class Connection(object):
 
     def __init__(self, socket):
-        self.close = socket.close
-        self._socket = socket
-        self._sendall = socket.sendall
+        self._socket = socket or NullSocket()
+
+    def close(self):
+        self._socket.close()
+        self._socket = NullSocket()
 
     def send_message(self, message):
         try:
-            self._sendall(message)
+            self._socket.sendall(message)
         except error as e:
             if e.errno == 32: # Broken pipe
                 self.close()
-                self._sendall = _noop
 
     @property
     def received_messages(self):
@@ -64,8 +72,9 @@ class Connection(object):
         try:
             while True:
                 new_part = self._socket.recv(MAX_READ_SIZE)
-                message += new_part
-                if not new_part:
+                if new_part:
+                    message += new_part
+                else:
                     # Broken connection?
                     break
         finally:

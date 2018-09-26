@@ -1,4 +1,6 @@
 from contextlib import contextmanager
+from hashlib import sha224
+from os import path
 import re
 
 
@@ -9,6 +11,7 @@ UPDATE_END_PREFIX = 'VIMPAIR_CONTENTS_END'
 CURSOR_POSITION_PREFIX = 'VIMPAIR_CURSOR_POSITION'
 TAKE_CONTROL_MESSAGE = 'VIMPAIR_TAKE_CONTROL'
 FILE_CHANGE_PREFIX = 'VIMPAIR_FILE_CHANGE'
+SAVE_FILE_MESSAGE = 'VIMPAIR_SAVE_FILE'
 
 MESSAGE_LENGTH = 1024
 _LENGTH_DIGITS_AND_MARKERS = 3 + 2
@@ -18,13 +21,14 @@ _UPDATE_START_CONTENTS_LENGTH = \
 _UPDATE_PART_CONTENTS_LENGTH = \
     MESSAGE_LENGTH - len(UPDATE_PART_PREFIX) - _LENGTH_DIGITS_AND_MARKERS
 
-_ANY_PREFIX = re.compile('%s|%s|%s|%s|%s|%s' % (
+_ANY_PREFIX = re.compile('%s|%s|%s|%s|%s|%s|%s' % (
     FULL_UPDATE_PREFIX,
     CURSOR_POSITION_PREFIX,
     UPDATE_START_PREFIX,
     UPDATE_PART_PREFIX,
     UPDATE_END_PREFIX,
     FILE_CHANGE_PREFIX,
+    SAVE_FILE_MESSAGE,
 ))
 
 _noop = lambda *a, **k: None
@@ -74,9 +78,17 @@ def generate_cursor_position_message(line, column):
     column = max(0, column or 0)
     return '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
 
-def generate_file_change_message(filename):
-    filename = (filename or '').strip()
-    return '%s|%d|%s' % (FILE_CHANGE_PREFIX, len(filename), filename)
+def generate_file_change_message(filename, folderpath=None, conceal_path=False):
+    contents = (filename or '').strip()
+    if contents and folderpath:
+        contents = path.join(
+            sha224(folderpath).hexdigest() if conceal_path else folderpath,
+            contents
+        )
+    return '%s|%d|%s' % (FILE_CHANGE_PREFIX, len(contents), contents)
+
+def generate_save_file_message():
+    return SAVE_FILE_MESSAGE
 
 def generate_take_control_message():
     return TAKE_CONTROL_MESSAGE
@@ -89,6 +101,7 @@ class NullCallbacks(object):
         self.apply_cursor_position = _noop
         self.take_control = _noop
         self.file_changed = _noop
+        self.save_file = _noop
 
 
 class MessageHandler(object):
@@ -105,6 +118,7 @@ class MessageHandler(object):
             UPDATE_PART_PREFIX: self._contents_part,
             UPDATE_END_PREFIX: self._contents_end,
             FILE_CHANGE_PREFIX: self._file_change,
+            SAVE_FILE_MESSAGE: self._save_file,
         }
 
     def _remove_from_message(self, string):
@@ -190,6 +204,14 @@ class MessageHandler(object):
                 self._callbacks.file_changed(filename=filename)
                 self._pending_update = None
             return filename != None
+
+    def _save_file(self):
+        found = False
+        if SAVE_FILE_MESSAGE in self._current_message:
+            self._current_message = self._current_message.replace(SAVE_FILE_MESSAGE, '')
+            self._callbacks.save_file()
+            found = True
+        return found
 
     @contextmanager
     def _current_message_being(self, message):

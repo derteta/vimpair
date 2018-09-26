@@ -16,6 +16,14 @@ def get_current_filename(vim=None):
         return ''
 
 
+def get_current_path(vim=None):
+    ''' returns the current file's full path without its name '''
+    try:
+        return vim.eval('expand("%:p:h")')
+    except AttributeError:
+        return ''
+
+
 def get_cursor_position(vim=None):
     ''' returns a tuple (line, column) of the cursor position '''
     try:
