@@ -117,6 +117,19 @@ class ApplyCurrentContentsTests(TestCase):
             ['This is one line.', 'This is another line.']
         )
 
+    def test_removes_superfluous_lines(self):
+        vim = mock_vim_with_contents(['1', '2', '3'])
+
+        apply_contents_update(
+            'This is one line.\nThis is another line.',
+            vim=vim
+        )
+
+        self.assertEqual(
+            vim.current.buffer,
+            ['This is one line.', 'This is another line.']
+        )
+
 
 class ApplyCursorPositionTests(TestCase):
 

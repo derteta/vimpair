@@ -76,6 +76,19 @@ function! VPClientTest_received_cursor_position_is_applied()
   python assert vim.current.window.cursor == (1, 8)
 endfunction
 
+function! VPClientTest_received_cursor_position_is_retained_after_full_update()
+  execute("normal iOne")
+  execute("normal oTwo")
+  execute("normal oThree")
+  call s:VPClientTest_set_received_messages(["VIMPAIR_CURSOR_POSITION|2|3"])
+  call s:VPClientTest_wait_for_timer()
+
+  call s:VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|18|One\nTwo\nThree\nFour"])
+  call s:VPClientTest_wait_for_timer()
+
+  python assert vim.current.window.cursor == (3, 3), vim.current.window.cursor
+endfunction
+
 function! VPClientTest_applies_large_contents_received_in_multiple_messages()
   call s:VPClientTest_set_received_messages([
         \ "VIMPAIR_CONTENTS_END|25|5678901234567890123456789",

@@ -39,12 +39,13 @@ def apply_contents_update(contents_string, vim=None):
     try:
         current_buffer = vim.current.buffer
         if current_buffer is not None:
-            del current_buffer[:]
-            for index, line in enumerate(contents_string.split('\n')):
+            lines = contents_string.split('\n')
+            for index, line in enumerate(lines):
                 if index < len(current_buffer):
                     current_buffer[index] = line
                 else:
                     current_buffer.append(line)
+            del current_buffer[len(lines):]
     except AttributeError:
         pass
 
