@@ -3,20 +3,19 @@ from connection import Connection
 
 class ConnectionHolder(object):
 
-    _connection = None
+    def __init__(self):
+        self._setup_connection(None)
 
     def _setup_connection(self, socket):
-        if socket:
-            self._connection = Connection(socket)
+        self._connection = Connection(socket)
 
     @property
     def connection(self):
         return self._connection
 
     def disconnect(self):
-        if self._connection:
-            self._connection.close()
-            self._connection = None
+        self._connection.close()
+        self._setup_connection(None)
 
 
 class ClientConnector(ConnectionHolder):
