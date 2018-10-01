@@ -1,4 +1,6 @@
 from connection import Connection
+from threading import Thread, Lock
+from socket import timeout
 
 
 class ConnectionHolder(object):
@@ -21,17 +23,45 @@ class ConnectionHolder(object):
 class ClientConnector(ConnectionHolder):
 
     def __init__(self, socket_factory):
+        self._lock = Lock()
+
         super(ClientConnector, self).__init__()
         self._server_socket = socket_factory()
-        self._check_for_new_connection_to_client()
+
+        self._start_waiting_for_client()
+
+    def _start_waiting_for_client(self):
+        self._wait_for_client = True
+        self._thread = Thread(target=self._check_for_new_connection_to_client)
+        self._thread.start()
+
+    def _stop_waiting_for_client(self):
+        self._wait_for_client = False
+        self._thread.join()
 
     def _check_for_new_connection_to_client(self):
-        connection_socket, _ = self._server_socket.accept() \
-            if self._server_socket \
-            else (None, '')
-        self._setup_connection(connection_socket)
+        if self._server_socket:
+            while self._wait_for_client:
+                try:
+                    connection_socket, _ = self._server_socket.accept()
+                    if connection_socket:
+                        self._setup_connection(connection_socket)
+                        self._wait_for_client = False
+                except timeout:
+                    pass
+
+    def _setup_connection(self, socket):
+        with self._lock:
+            super(ClientConnector, self)._setup_connection(socket)
+
+    @property
+    def connection(self):
+        with self._lock:
+            return self._connection
 
     def disconnect(self):
+        self._stop_waiting_for_client()
+
         super(ClientConnector, self).disconnect()
 
         if self._server_socket:

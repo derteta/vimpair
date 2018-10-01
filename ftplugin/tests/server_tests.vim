@@ -3,6 +3,27 @@ execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 
+python << EOF
+
+class SingleThreadedClientConnector(ClientConnector):
+    """
+        For the pupose of the tests below, we set up a fake
+        connection instantly. So we don't want to wait for
+        a worker thread to pick it up
+    """
+
+    def _start_waiting_for_client(self):
+        self._wait_for_client = True
+        self._check_for_new_connection_to_client()
+
+    def _stop_waiting_for_client(self):
+        self._wait_for_client = False
+
+
+ClientConnector = SingleThreadedClientConnector
+
+EOF
+
 let g:VimpairShowStatusMessages = 0
 let g:VimpairConcealFilePaths = 0
 let g:VimpairTimerInterval = 1
