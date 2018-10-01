@@ -19,7 +19,7 @@ _noop = lambda *a, **k: None
 def create_server_socket():
     try:
         sock = socket(AF_INET, SOCK_STREAM)
-        sock.settimeout(10.)
+        sock.settimeout(1.)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         sock.bind((SERVER_ADDRESS, SERVER_PORT))
         sock.listen(1)
