@@ -84,6 +84,11 @@ def send_save_file():
 
 send_file_change = SendFileChange()
 
+def check_for_new_client():
+    if not connector.is_waiting_for_connection:
+        update_contents_and_cursor()
+        vim.command('call s:VimpairStopTimer()')
+
 
 class VimCallbacks(object):
 
@@ -162,6 +167,10 @@ function! s:VimpairStartReceivingMessagesTimer()
         \)
 endfunction
 
+function! s:VimpairStartCheckingForClientTimer()
+  call s:VimpairStartTimer("python check_for_new_client()")
+endfunction
+
 
 function! s:VimpairInitialize()
   augroup VimpairCleanup
@@ -189,6 +198,7 @@ function! VimpairServerStart()
 
   python connector = ClientConnector(server_socket_factory)
 
+  call s:VimpairStartCheckingForClientTimer()
   call s:VimpairStartObserving()
   python send_file_change()
 endfunction

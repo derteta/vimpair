@@ -30,6 +30,10 @@ class ClientConnector(ConnectionHolder):
 
         self._start_waiting_for_client()
 
+    @property
+    def is_waiting_for_connection(self):
+        return self._wait_for_client
+
     def _start_waiting_for_client(self):
         self._wait_for_client = True
         self._thread = Thread(target=self._check_for_new_connection_to_client)
