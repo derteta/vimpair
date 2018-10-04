@@ -138,12 +138,10 @@ endfunction
 
 let s:VimpairTimer = ""
 
-function! s:VimpairStartTimer()
+function! s:VimpairStartTimer(timer_command)
   let s:VimpairTimer = timer_start(
         \  g:VimpairTimerInterval,
-        \  {-> execute(
-        \       "python message_handler.process(connector.connection.received_messages)",
-        \       "")},
+        \  {-> execute(a:timer_command, "")},
         \  {'repeat': -1}
         \)
 endfunction
@@ -153,6 +151,15 @@ function! s:VimpairStopTimer()
     call timer_stop(s:VimpairTimer)
     let s:VimpairTimer = ""
   endif
+endfunction
+
+
+function! s:VimpairStartReceivingMessagesTimer()
+  call s:VimpairStartTimer(
+        \  "python message_handler.process(" .
+        \  "    connector.connection.received_messages" .
+        \  ")"
+        \)
 endfunction
 
 
@@ -198,7 +205,7 @@ function! VimpairClientStart()
 
   python send_file_change.enabled = False
   python session = Session()
-  call s:VimpairStartTimer()
+  call s:VimpairStartReceivingMessagesTimer()
 endfunction
 
 function! VimpairClientStop()
@@ -211,7 +218,7 @@ function! VimpairHandover()
   python show_status_message('Handing over control')
   call s:VimpairStopObserving()
   python connector.connection.send_message(generate_take_control_message())
-  call s:VimpairStartTimer()
+  call s:VimpairStartReceivingMessagesTimer()
 endfunction
 
 
