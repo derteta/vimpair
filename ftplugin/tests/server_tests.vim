@@ -19,6 +19,9 @@ class SingleThreadedClientConnector(ClientConnector):
     def _stop_waiting_for_client(self):
         self._wait_for_client = False
 
+    def set_waiting_for_connection(self, waiting):
+        self._wait_for_client = waiting
+
 
 ClientConnector = SingleThreadedClientConnector
 
@@ -205,6 +208,14 @@ function! VPServerTest_doesnt_send_save_file_message_when_saving_after_handover(
   execute("silent w")
 
   call s:VPServerTest_assert_has_not_sent_message("VIMPAIR_SAVE_FILE")
+endfunction
+
+function! VPServerTest_doesnt_send_take_control_message_while_waiting_for_client()
+  python connector.set_waiting_for_connection(True)
+
+  VimpairHandover
+
+  call s:VPServerTest_assert_has_not_sent_message("VIMPAIR_TAKE_CONTROL")
 endfunction
 
 

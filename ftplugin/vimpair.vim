@@ -89,6 +89,15 @@ def check_for_new_client():
         update_contents_and_cursor()
         vim.command('call s:VimpairStopTimer()')
 
+def hand_over_control():
+    if connector.is_waiting_for_connection:
+        show_status_message('No client connected')
+    else:
+        show_status_message('Handing over control')
+        vim.command('call s:VimpairStopObserving()')
+        connector.connection.send_message(generate_take_control_message())
+        vim.command('call s:VimpairStartReceivingMessagesTimer()')
+
 
 class VimCallbacks(object):
 
@@ -225,10 +234,7 @@ endfunction
 
 
 function! VimpairHandover()
-  python show_status_message('Handing over control')
-  call s:VimpairStopObserving()
-  python connector.connection.send_message(generate_take_control_message())
-  call s:VimpairStartReceivingMessagesTimer()
+  python hand_over_control()
 endfunction
 
 
