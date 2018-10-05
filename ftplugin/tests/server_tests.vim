@@ -31,10 +31,8 @@ let g:VimpairTimerInterval = 1
 function! _VPServerTest_set_up()
   execute("vnew")
   python sendall_calls = []
-  python fake_socket = Mock()
-  python fake_socket.sendall = lambda b: sendall_calls.append(b)
-  python server_socket = Mock()
-  python server_socket.accept = Mock(return_value=(fake_socket, ''))
+  python fake_socket = Mock(sendall=lambda b: sendall_calls.append(b))
+  python server_socket = Mock(get_client_connection=lambda : fake_socket)
   python server_socket_factory = lambda: server_socket
   VimpairServerStart
 endfunction

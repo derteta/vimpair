@@ -1,6 +1,5 @@
 from connection import Connection
 from threading import Thread, Lock
-from socket import timeout
 
 
 class ConnectionHolder(object):
@@ -46,13 +45,10 @@ class ClientConnector(ConnectionHolder):
     def _check_for_new_connection_to_client(self):
         if self._server_socket:
             while self._wait_for_client:
-                try:
-                    connection_socket, _ = self._server_socket.accept()
-                    if connection_socket:
-                        self._setup_connection(connection_socket)
-                        self._wait_for_client = False
-                except timeout:
-                    pass
+                connection_socket = self._server_socket.get_client_connection()
+                if connection_socket:
+                    self._setup_connection(connection_socket)
+                    self._wait_for_client = False
 
     def _setup_connection(self, socket):
         with self._lock:
