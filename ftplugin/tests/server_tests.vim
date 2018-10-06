@@ -3,6 +3,30 @@ execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 
+python << EOF
+
+class SingleThreadedClientConnector(ClientConnector):
+    """
+        For the pupose of the tests below, we set up a fake
+        connection instantly. So we don't want to wait for
+        a worker thread to pick it up
+    """
+
+    def _start_waiting_for_client(self):
+        self._wait_for_client = True
+        self._check_for_new_connection_to_client()
+
+    def _stop_waiting_for_client(self):
+        self._wait_for_client = False
+
+    def set_waiting_for_connection(self, waiting):
+        self._wait_for_client = waiting
+
+
+ClientConnector = SingleThreadedClientConnector
+
+EOF
+
 let g:VimpairShowStatusMessages = 0
 let g:VimpairConcealFilePaths = 0
 let g:VimpairTimerInterval = 1
@@ -10,10 +34,8 @@ let g:VimpairTimerInterval = 1
 function! _VPServerTest_set_up()
   execute("vnew")
   python sendall_calls = []
-  python fake_socket = Mock()
-  python fake_socket.sendall = lambda b: sendall_calls.append(b)
-  python server_socket = Mock()
-  python server_socket.accept = Mock(return_value=(fake_socket, ''))
+  python fake_socket = Mock(sendall=lambda b: sendall_calls.append(b))
+  python server_socket = Mock(get_client_connection=lambda : fake_socket)
   python server_socket_factory = lambda: server_socket
   VimpairServerStart
 endfunction
@@ -186,6 +208,14 @@ function! VPServerTest_doesnt_send_save_file_message_when_saving_after_handover(
   execute("silent w")
 
   call s:VPServerTest_assert_has_not_sent_message("VIMPAIR_SAVE_FILE")
+endfunction
+
+function! VPServerTest_doesnt_send_take_control_message_while_waiting_for_client()
+  python connector.set_waiting_for_connection(True)
+
+  VimpairHandover
+
+  call s:VPServerTest_assert_has_not_sent_message("VIMPAIR_TAKE_CONTROL")
 endfunction
 
 

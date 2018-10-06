@@ -6,6 +6,7 @@ from socket import (
     error,
     gethostbyname,
     socket,
+    timeout,
 )
 
 
@@ -16,10 +17,21 @@ MAX_READ_SIZE = 1024
 _noop = lambda *a, **k: None
 
 
+class ServerSocket(socket):
+    """ Socket that allows for continuous checking for client connections """
+
+    def get_client_connection(self):
+        try:
+            connection_socket, _ = self.accept()
+            return connection_socket
+        except timeout:
+            pass
+
+
 def create_server_socket():
     try:
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.settimeout(10.)
+        sock = ServerSocket(AF_INET, SOCK_STREAM)
+        sock.settimeout(1.)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         sock.bind((SERVER_ADDRESS, SERVER_PORT))
         sock.listen(1)

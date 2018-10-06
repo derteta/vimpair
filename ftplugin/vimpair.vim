@@ -84,6 +84,20 @@ def send_save_file():
 
 send_file_change = SendFileChange()
 
+def check_for_new_client():
+    if not connector.is_waiting_for_connection:
+        update_contents_and_cursor()
+        vim.command('call s:VimpairStopTimer()')
+
+def hand_over_control():
+    if connector.is_waiting_for_connection:
+        show_status_message('No client connected')
+    else:
+        show_status_message('Handing over control')
+        vim.command('call s:VimpairStopObserving()')
+        connector.connection.send_message(generate_take_control_message())
+        vim.command('call s:VimpairStartReceivingMessagesTimer()')
+
 
 class VimCallbacks(object):
 
@@ -138,12 +152,10 @@ endfunction
 
 let s:VimpairTimer = ""
 
-function! s:VimpairStartTimer()
+function! s:VimpairStartTimer(timer_command)
   let s:VimpairTimer = timer_start(
         \  g:VimpairTimerInterval,
-        \  {-> execute(
-        \       "python message_handler.process(connector.connection.received_messages)",
-        \       "")},
+        \  {-> execute(a:timer_command, "")},
         \  {'repeat': -1}
         \)
 endfunction
@@ -153,6 +165,19 @@ function! s:VimpairStopTimer()
     call timer_stop(s:VimpairTimer)
     let s:VimpairTimer = ""
   endif
+endfunction
+
+
+function! s:VimpairStartReceivingMessagesTimer()
+  call s:VimpairStartTimer(
+        \  "python message_handler.process(" .
+        \  "    connector.connection.received_messages" .
+        \  ")"
+        \)
+endfunction
+
+function! s:VimpairStartCheckingForClientTimer()
+  call s:VimpairStartTimer("python check_for_new_client()")
 endfunction
 
 
@@ -182,6 +207,7 @@ function! VimpairServerStart()
 
   python connector = ClientConnector(server_socket_factory)
 
+  call s:VimpairStartCheckingForClientTimer()
   call s:VimpairStartObserving()
   python send_file_change()
 endfunction
@@ -198,7 +224,7 @@ function! VimpairClientStart()
 
   python send_file_change.enabled = False
   python session = Session()
-  call s:VimpairStartTimer()
+  call s:VimpairStartReceivingMessagesTimer()
 endfunction
 
 function! VimpairClientStop()
@@ -208,10 +234,7 @@ endfunction
 
 
 function! VimpairHandover()
-  python show_status_message('Handing over control')
-  call s:VimpairStopObserving()
-  python connector.connection.send_message(generate_take_control_message())
-  call s:VimpairStartTimer()
+  python hand_over_control()
 endfunction
 
 
