@@ -1,7 +1,7 @@
 python << EOF
 import sys, os, vim
 script_path = vim.eval('expand("<sfile>:p:h")')
-python_path = os.path.abspath(os.path.join(script_path, 'python'))
+python_path = os.path.abspath(os.path.join(script_path, '..', 'python', 'vimpair'))
 
 if not python_path in sys.path:
     sys.path.append(python_path)
