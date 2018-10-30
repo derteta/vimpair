@@ -46,15 +46,24 @@ function! _VPServerTest_tear_down()
 endfunction
 
 function! s:VPServerTest_assert_has_sent_message(expected)
-  python assert vim.eval('a:expected') in sendall_calls
+  python expected_call = vim.eval('a:expected')
+  python assert expected_call in sendall_calls,
+        \ "Message was not sent: '%s'" % expected_call
+  python del expected_call
 endfunction
 
 function! s:VPServerTest_assert_has_sent_message_starting_with(expected)
-  python assert any([c.startswith(vim.eval('a:expected')) for c in sendall_calls])
+  python expected_call = vim.eval('a:expected')
+  python assert any([c.startswith(expected_call) for c in sendall_calls]),
+        \ "No Message sent starting with '%s'" % expected_call
+  python del expected_call
 endfunction
 
-function! s:VPServerTest_assert_has_not_sent_message(expected)
-  python assert not vim.eval('a:expected') in sendall_calls
+function! s:VPServerTest_assert_has_not_sent_message(unexpected)
+  python unexpected_call = vim.eval('a:unexpected')
+  python assert not unexpected_call in sendall_calls,
+        \ "Sent message '%s', but should not have" % unexpected_call
+  python del unexpected_call
 endfunction
 
 function! s:VPServerTest_assert_buffer_has_contents(expected)
