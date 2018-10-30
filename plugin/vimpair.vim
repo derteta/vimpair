@@ -139,7 +139,7 @@ function! s:VimpairStartObserving()
     autocmd CursorMoved * python send_cursor_position()
     autocmd CursorMovedI * python send_cursor_position()
     autocmd BufEnter * python send_file_change()
-    autocmd BufWritePost * python send_save_file()
+    autocmd BufWritePost * python send_file_change() ; send_save_file()
   augroup END
 endfunction
 

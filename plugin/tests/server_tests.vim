@@ -185,6 +185,16 @@ function! VPServerTest_applies_received_updates_after_handover()
   call s:VPServerTest_assert_buffer_has_contents(["This is line one"])
 endfunction
 
+function! VPServerTest_sends_file_change_on_buffer_name_change()
+  " Faking writing the buffer to disk with a new name, so we don't need to clean up
+  python vim.current.buffer.name = "SomeRandomName"
+  execute("doautocmd BufWritePost")
+
+  let file_path = expand("%:p")
+  call s:VPServerTest_assert_has_sent_message(
+    \ "VIMPAIR_FILE_CHANGE|" . printf("%d", strlen(file_path)) . "|" . file_path)
+endfunction
+
 function! VPServerTest_sends_file_change_on_change()
   execute("silent e " . expand("%:p:h") . "/../README.md")
 
