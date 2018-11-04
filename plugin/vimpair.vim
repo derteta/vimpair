@@ -118,7 +118,8 @@ class VimCallbacks(object):
         filename = get_current_filename(vim=self._vim)
         if filename:
             path = get_current_path(vim=self._vim)
-            os.makedirs(path)
+            if not os.path.exists(path):
+                os.makedirs(path)
             filename_and_path = os.path.join(path, filename)
             show_status_message('Saving file "%s"' % filename_and_path)
             self._vim.command('silent write! ' + filename_and_path)

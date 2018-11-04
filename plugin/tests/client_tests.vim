@@ -217,8 +217,13 @@ function! VPClientTest_saves_current_file_when_receiving_save_message()
   call s:VPClientTest_set_received_messages(["VIMPAIR_SAVE_FILE"])
   call s:VPClientTest_wait_for_timer()
 
+  " Regression test: saving a second time would raise an error
+  call s:VPClientTest_set_received_messages(["VIMPAIR_SAVE_FILE"])
+  call s:VPClientTest_wait_for_timer()
+
   python expected_file_path = session.prepend_folder("Folder/SomeFile.py")
-  python assert os.path.exists(expected_file_path)
+  python assert os.path.exists(expected_file_path),
+        \ "'%s' doesn't exist" % expected_file_path
 endfunction
 
 
