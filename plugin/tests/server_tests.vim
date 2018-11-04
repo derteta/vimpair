@@ -33,37 +33,41 @@ let g:VimpairTimerInterval = 1
 
 function! _VPServerTest_set_up()
   execute("vnew")
-  python sendall_calls = []
-  python fake_socket = Mock(sendall=lambda b: sendall_calls.append(b))
-  python server_socket = Mock(get_client_connection=lambda : fake_socket)
-  python server_socket_factory = lambda: server_socket
+  let g:VPServerTest_SentMessages = []
+  python fake_socket = Mock(sendall=
+        \ lambda b: vim.command('call add(g:VPServerTest_SentMessages, "%s")' % str(b)))
+  python server_socket_factory = lambda: Mock(get_client_connection=lambda : fake_socket)
   VimpairServerStart
 endfunction
 
 function! _VPServerTest_tear_down()
   VimpairServerStop
+  unlet g:VPServerTest_SentMessages
   execute("q!")
 endfunction
 
 function! s:VPServerTest_assert_has_sent_message(expected)
-  python expected_call = vim.eval('a:expected')
-  python assert expected_call in sendall_calls,
-        \ "Message was not sent: '%s'" % expected_call
-  python del expected_call
+  for message in g:VPServerTest_SentMessages
+    if message == a:expected
+      return
+    endif
+  endfor
+  call assert_report("Expected message has not been sent: " . a:expected)
 endfunction
 
 function! s:VPServerTest_assert_has_sent_message_starting_with(expected)
-  python expected_call = vim.eval('a:expected')
-  python assert any([c.startswith(expected_call) for c in sendall_calls]),
-        \ "No Message sent starting with '%s'" % expected_call
-  python del expected_call
+  for message in g:VPServerTest_SentMessages
+    if message =~ a:expected . ".*"
+      return
+    endif
+  endfor
+  call assert_report("No message has been sent starting with " . a:expected)
 endfunction
 
 function! s:VPServerTest_assert_has_not_sent_message(unexpected)
-  python unexpected_call = vim.eval('a:unexpected')
-  python assert not unexpected_call in sendall_calls,
-        \ "Sent message '%s', but should not have" % unexpected_call
-  python del unexpected_call
+  for message in g:VPServerTest_SentMessages
+    call assert_notequal(message, a:unexpected, "Unexpected message has been sent: " . message)
+  endfor
 endfunction
 
 function! s:VPServerTest_assert_buffer_has_contents(expected)
@@ -204,7 +208,7 @@ function! VPServerTest_sends_file_change_on_change()
 endfunction
 
 function! VPServerTest_sends_file_contents_on_file_change()
-  python sendall_calls = []
+  let g:VPServerTest_SentMessages = []
 
   execute("silent e " . expand("%:p:h") . "/../.gitignore")
 

@@ -10,13 +10,16 @@ let g:VimpairTimerInterval = 1
 
 function! _VPClientTest_set_up()
   execute("vnew")
-  python fake_socket = Mock()
+  let g:VPClientTest_SentMessages = []
+  python fake_socket = Mock(sendall=
+        \ lambda b: vim.command('call add(g:VPClientTest_SentMessages, "%s")' % str(b)))
   python client_socket_factory = lambda: fake_socket
   VimpairClientStart
 endfunction
 
 function! _VPClientTest_tear_down()
   VimpairClientStop
+  unlet g:VPClientTest_SentMessages
   execute("q!")
 endfunction
 
@@ -39,8 +42,12 @@ EOF
 endfunction
 
 function! s:VPClientTest_assert_has_sent_message(expected)
-  python fake_socket.sendall.assert_any_call(
-    \ vim.eval('a:expected'))
+  for message in g:VPClientTest_SentMessages
+    if message == a:expected
+      return
+    endif
+  endfor
+  call assert_report("Expected message has not been sent: " . a:expected)
 endfunction
 
 function! s:VPClientTest_wait_for_timer()
@@ -207,7 +214,7 @@ function! VPClientTest_doesnt_send_file_change_on_change_after_taking_control()
 
   execute("silent e " . expand("%:p:h") . "/../README.md")
 
-  python fake_socket.sendall.assert_not_called()
+  call assert_equal([], g:VPClientTest_SentMessages)
 endfunction
 
 function! VPClientTest_saves_current_file_when_receiving_save_message()
