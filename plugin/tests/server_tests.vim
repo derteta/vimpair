@@ -1,4 +1,4 @@
-python from mock import call, Mock
+python from mock import Mock
 execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
