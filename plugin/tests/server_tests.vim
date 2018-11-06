@@ -71,11 +71,8 @@ function! s:VPServerTest_assert_has_not_sent_message(unexpected)
 endfunction
 
 function! s:VPServerTest_assert_buffer_has_contents(expected)
-python << EOF
-actual = list(vim.current.buffer)
-expected = list(vim.eval('a:expected'))
-assert actual == expected, actual
-EOF
+  let l:actual = getline(1, '$')
+  call assert_equal(a:expected, l:actual)
 endfunction
 
 function! s:VPServerTest_wait_for_timer()
@@ -191,7 +188,7 @@ endfunction
 
 function! VPServerTest_sends_file_change_on_buffer_name_change()
   " Faking writing the buffer to disk with a new name, so we don't need to clean up
-  python vim.current.buffer.name = "SomeRandomName"
+  silent file SomeRandomName
   execute("doautocmd BufWritePost")
 
   let file_path = expand("%:p")

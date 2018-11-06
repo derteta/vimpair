@@ -1,5 +1,4 @@
 python from mock import Mock
-python import os
 python import vim
 execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
@@ -34,11 +33,8 @@ function! s:VPClientTest_take_control()
 endfunction
 
 function! s:VPClientTest_assert_buffer_has_contents(expected)
-python << EOF
-actual = list(vim.current.buffer)
-expected = list(vim.eval('a:expected'))
-assert actual == expected, actual
-EOF
+  let l:actual = getline(1, '$')
+  call assert_equal(a:expected, l:actual)
 endfunction
 
 function! s:VPClientTest_assert_has_sent_message(expected)
@@ -80,7 +76,8 @@ function! VPClientTest_received_cursor_position_is_applied()
 
   call s:VPClientTest_wait_for_timer()
 
-  python assert vim.current.window.cursor == (1, 8)
+  let l:actual = getpos(".")[1:2]
+  call assert_equal([1, 9], l:actual)
 endfunction
 
 function! VPClientTest_received_cursor_position_is_retained_after_full_update()
@@ -93,7 +90,8 @@ function! VPClientTest_received_cursor_position_is_retained_after_full_update()
   call s:VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|18|One\nTwo\nThree\nFour"])
   call s:VPClientTest_wait_for_timer()
 
-  python assert vim.current.window.cursor == (3, 3), vim.current.window.cursor
+  let l:actual = getpos(".")[1:2]
+  call assert_equal([3, 4], l:actual)
 endfunction
 
 function! VPClientTest_applies_large_contents_received_in_multiple_messages()
@@ -205,8 +203,9 @@ function! VPClientTest_creates_new_buffer_with_filename_on_receiving_file_change
 
   " On Mac, we set up the session folder in /var/folders/..., but vim reports
   " the buffer path as /private/var/folders/..., which is synonymous
-  python expected_file_path = session.prepend_folder("SomeFile.py")
-  python assert vim.eval('expand("%")').endswith(expected_file_path)
+  python vim.command('let expected = "%s"' % session.prepend_folder("SomeFile.py"))
+  call assert_match(".*" . expected, expand("%"))
+  unlet expected
 endfunction
 
 function! VPClientTest_doesnt_send_file_change_on_change_after_taking_control()
@@ -228,9 +227,9 @@ function! VPClientTest_saves_current_file_when_receiving_save_message()
   call s:VPClientTest_set_received_messages(["VIMPAIR_SAVE_FILE"])
   call s:VPClientTest_wait_for_timer()
 
-  python expected_file_path = session.prepend_folder("Folder/SomeFile.py")
-  python assert os.path.exists(expected_file_path),
-        \ "'%s' doesn't exist" % expected_file_path
+  python vim.command('let expected = "%s"' % session.prepend_folder("Folder/SomeFile.py"))
+  call assert_false(empty(glob(expected)))
+  unlet expected
 endfunction
 
 
