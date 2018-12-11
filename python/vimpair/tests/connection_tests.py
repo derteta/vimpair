@@ -1,9 +1,9 @@
 from functools import partial
-from mock import Mock
-from socket import error, timeout
+from mock import Mock, patch
+from socket import AF_INET, SOCK_STREAM, error, socket, timeout
 from unittest import TestCase
 
-from ..connection import Connection
+from ..connection import Connection, create_client_socket
 
 def fake_recv(_number_of_bytes, values=[]):
     if len(values) == 0:
@@ -64,3 +64,36 @@ class ConnectionTests(TestCase):
         self.connection.send_message('Another message')
 
         self.socket.sendall.assert_not_called()
+
+
+class ClientSocketFactoryTests(TestCase):
+
+    EXPECTED_PORT = 50007
+
+    @patch('socket.socket.connect')
+    def test_creates_internet_socket(self, _):
+        client_socket = create_client_socket()
+
+        self.assertEqual(client_socket.family, AF_INET)
+
+    @patch('socket.socket.connect')
+    def test_creates_stream_socket(self, _):
+        client_socket = create_client_socket()
+
+        self.assertEqual(client_socket.type, SOCK_STREAM)
+
+    @patch('socket.socket.connect')
+    def test_returns_None_if_exception_is_raised(self, mocked_connect):
+
+        def raise_exception():
+            raise Exception
+
+        mocked_connect.side_effect = raise_exception
+
+        self.assertEqual(create_client_socket(), None)
+
+    @patch('socket.socket.connect')
+    def test_connects_to_localhost_if_no_address_is_specified(self, mocked_connect):
+        create_client_socket()
+
+        mocked_connect.assert_called_with(('127.0.0.1', self.EXPECTED_PORT))
