@@ -42,11 +42,11 @@ def create_server_socket():
         return sock
 
 
-def create_client_socket():
+def create_client_socket(address=None):
     try:
         sock = socket(AF_INET, SOCK_STREAM)
         sock.settimeout(.1)
-        sock.connect((SERVER_ADDRESS, SERVER_PORT))
+        sock.connect((address or SERVER_ADDRESS, SERVER_PORT))
     except Exception as e:
         print(str(e))
         sock.close()

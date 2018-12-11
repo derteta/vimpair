@@ -97,3 +97,15 @@ class ClientSocketFactoryTests(TestCase):
         create_client_socket()
 
         mocked_connect.assert_called_with(('127.0.0.1', self.EXPECTED_PORT))
+
+    @patch('socket.socket.connect')
+    def test_connects_to_localhost_if_None_is_specified_as_address(self, mocked_connect):
+        create_client_socket(None)
+
+        mocked_connect.assert_called_with(('127.0.0.1', self.EXPECTED_PORT))
+
+    @patch('socket.socket.connect')
+    def test_connects_to_specified_address(self, mocked_connect):
+        create_client_socket('192.68.0.1')
+
+        mocked_connect.assert_called_with(('192.68.0.1', self.EXPECTED_PORT))
