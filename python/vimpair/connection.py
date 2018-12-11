@@ -11,7 +11,7 @@ from socket import (
 
 
 SERVER_ADDRESS = gethostbyname('localhost')
-SERVER_PORT = 50007
+SERVER_PORT = 50007 # Generic port from python.org examples, should be changed
 MAX_READ_SIZE = 1024
 
 _noop = lambda *a, **k: None
