@@ -84,10 +84,10 @@ class SingleThreadedClientConnector(ClientConnector):
 
 class ServerConnector(ConnectionHolder):
 
-    def __init__(self, socket_factory):
+    def __init__(self, socket_factory, address):
         super(ServerConnector, self).__init__()
-        self._check_for_connection_to_server(socket_factory)
+        self._check_for_connection_to_server(socket_factory, address)
 
-    def _check_for_connection_to_server(self, socket_factory):
-        connection_socket = socket_factory()
+    def _check_for_connection_to_server(self, socket_factory, address):
+        connection_socket = socket_factory(address)
         self._setup_connection(connection_socket)

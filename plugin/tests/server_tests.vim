@@ -15,8 +15,13 @@ function! _VPServerTest_set_up()
   execute("vnew")
   let g:VPServerTest_SentMessages = []
   call g:VimpairRunPython(
-        \  "fake_socket = Mock(sendall=lambda b: vim.command(" .
-        \  "    'call add(g:VPServerTest_SentMessages, \"%s\")' % str(b)))"
+        \  "def fake_sendall(message):\n" .
+        \  "    print(str(message))\n" .
+        \  "    vim.command(" .
+        \  "        'call add(g:VPServerTest_SentMessages, \"message\")'" .
+        \  "        % str(message)" .
+        \  "    )\n" .
+        \  "fake_socket = Mock(sendall=fake_sendall)"
         \)
   call g:VimpairRunPython(
         \  "server_socket_factory =" .

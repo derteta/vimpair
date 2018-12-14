@@ -145,11 +145,14 @@ function! VimpairServerStop()
 endfunction
 
 
-function! VimpairClientStart()
+function! VimpairClientStart(address)
   call g:VimpairRunPython("session = Session()")
   call s:VimpairInitialize()
 
-  call g:VimpairRunPython("vimpair.connector = ServerConnector(client_socket_factory)")
+  call g:VimpairRunPython(
+        \  "vimpair.connector =" .
+        \  "    ServerConnector(client_socket_factory, '" . a:address . "')"
+        \)
 
   call g:VimpairRunPython("vimpair.send_file_change.enabled = False")
   call s:VimpairStartReceivingMessagesTimer()
@@ -171,6 +174,6 @@ endfunction
 
 command! -nargs=0 VimpairServerStart :call VimpairServerStart()
 command! -nargs=0 VimpairServerStop :call VimpairServerStop()
-command! -nargs=0 VimpairClientStart :call VimpairClientStart()
+command! -nargs=? VimpairClientStart :call VimpairClientStart(<args>)
 command! -nargs=0 VimpairClientStop :call VimpairClientStop()
 command! -nargs=0 VimpairHandover :call VimpairHandover()

@@ -13,8 +13,8 @@ function! _VPClientTest_set_up()
         \ "fake_socket = Mock(sendall=lambda b: vim.command(" .
         \ "    'call add(g:VPClientTest_SentMessages, \"%s\")' % str(b)))"
         \)
-  call g:VimpairRunPython("client_socket_factory = lambda: fake_socket")
-  VimpairClientStart
+  call g:VimpairRunPython("client_socket_factory = Mock(return_value=fake_socket)")
+  call VimpairClientStart("1.2.3.4")
 endfunction
 
 function! _VPClientTest_tear_down()
@@ -54,6 +54,10 @@ function! s:VPClientTest_wait_for_timer()
   sleep 3m
 endfunction
 
+
+function! VPClientTest_uses_provided_server_address_for_connection()
+  call g:VimpairRunPython("client_socket_factory.assert_called_with('1.2.3.4')")
+endfunction
 
 function! VPClientTest_applies_received_contents_updates()
   call s:VPClientTest_set_received_messages(["VIMPAIR_FULL_UPDATE|16|This is line one"])
