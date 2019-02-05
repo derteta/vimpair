@@ -136,6 +136,17 @@ class MessageHandler(object):
             contents = groups[1][:length] if groups else None
             yield length, contents
 
+
+    def _start_pending_update(self, contents):
+        self._pending_update = contents
+    def _add_to_pending_update(self, contents):
+        if self._pending_update:
+            self._pending_update += contents
+    def _end_pending_update(self, contents):
+        if self._pending_update:
+            self._callbacks.update_contents(self._pending_update + contents)
+        self._pending_update = None
+
     def _contents_update(self):
         pattern = '%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX
         with self._find_length_and_contents(pattern) as (length, contents):
@@ -155,7 +166,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (UPDATE_START_PREFIX, length, contents)
                 )
-                self._pending_update = contents
+                self._start_pending_update(contents)
             return contents != None
 
     def _contents_part(self):
@@ -165,8 +176,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (UPDATE_PART_PREFIX, length, contents)
                 )
-                if self._pending_update:
-                    self._pending_update += contents[:length]
+                self._add_to_pending_update(contents[:length])
             return contents != None
 
     def _contents_end(self):
@@ -176,9 +186,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (UPDATE_END_PREFIX, length, contents)
                 )
-                if self._pending_update:
-                    self._callbacks.update_contents(self._pending_update + contents)
-                self._pending_update = None
+                self._end_pending_update(contents)
             return contents != None
 
     def _cursor_position(self):
