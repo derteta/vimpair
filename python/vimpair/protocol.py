@@ -155,7 +155,7 @@ class MessageHandler(object):
         yield match.groups() if match else None
 
     @contextmanager
-    def _find_length_and_contents(self, prefix):
+    def _extract_length_and_contents(self, prefix):
         expression = '%s\|(\d+)\|(.*)' % prefix
         with self._find_match(expression) as groups:
             if groups:
@@ -168,7 +168,7 @@ class MessageHandler(object):
 
 
     def _contents_update(self):
-        with self._find_length_and_contents(FULL_UPDATE_PREFIX) as (length, contents):
+        with self._extract_length_and_contents(FULL_UPDATE_PREFIX) as (length, contents):
             if contents != None:
                 if length <= len(contents):
                     self._pending_update.start(contents)
@@ -176,19 +176,19 @@ class MessageHandler(object):
             return contents != None
 
     def _contents_start(self):
-        with self._find_length_and_contents(UPDATE_START_PREFIX) as (length, contents):
+        with self._extract_length_and_contents(UPDATE_START_PREFIX) as (length, contents):
             if contents != None:
                 self._pending_update.start(contents)
             return contents != None
 
     def _contents_part(self):
-        with self._find_length_and_contents(UPDATE_PART_PREFIX) as (length, contents):
+        with self._extract_length_and_contents(UPDATE_PART_PREFIX) as (length, contents):
             if contents != None:
                 self._pending_update.add(contents[:length])
             return contents != None
 
     def _contents_end(self):
-        with self._find_length_and_contents(UPDATE_END_PREFIX) as (length, contents):
+        with self._extract_length_and_contents(UPDATE_END_PREFIX) as (length, contents):
             if contents != None:
                 self._pending_update.end(contents)
             return contents != None
@@ -207,7 +207,7 @@ class MessageHandler(object):
             return group != None
 
     def _file_change(self):
-        with self._find_length_and_contents(FILE_CHANGE_PREFIX) as (length, filename):
+        with self._extract_length_and_contents(FILE_CHANGE_PREFIX) as (length, filename):
             if filename != None:
                 self._callbacks.file_changed(filename=filename)
                 self._pending_update.reset()
