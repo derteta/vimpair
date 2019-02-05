@@ -166,12 +166,12 @@ class MessageHandler(object):
         pattern = '%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX
         with self._find_length_and_contents(pattern) as (length, contents):
             if contents != None:
-                self._pending_update.reset()
                 self._remove_from_message(
                     '%s|%d|%s' % (FULL_UPDATE_PREFIX, length, contents)
                 )
                 if length <= len(contents):
-                    self._callbacks.update_contents(contents)
+                    self._pending_update.start(contents)
+                    self._pending_update.end('')
             return contents != None
 
     def _contents_start(self):
