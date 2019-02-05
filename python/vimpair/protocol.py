@@ -104,13 +104,38 @@ class NullCallbacks(object):
         self.save_file = _noop
 
 
+class PendingUpdate(object):
+
+    def __init__(self, update_callback=None):
+        self._contents = None
+        self._update_callback = update_callback or _noop
+
+    def start(self, contents):
+        self._contents = contents
+
+    def add(self, contents):
+        if self._contents is not None:
+            self._contents += contents
+
+    def end(self, contents):
+        if self._contents is not None:
+            self._contents += contents
+            self._update_callback(self._contents)
+        self.reset()
+
+    def reset(self):
+        self._contents = None
+
+
 class MessageHandler(object):
 
     def __init__(self, callbacks=None):
         self._leftover = ''
         self._current_message = ''
-        self._pending_update = None
         self._callbacks = callbacks or NullCallbacks()
+        self._pending_update = PendingUpdate(
+            update_callback=self._callbacks.update_contents
+        )
         self._prefix_to_process_call = {
             FULL_UPDATE_PREFIX: self._contents_update,
             CURSOR_POSITION_PREFIX: self._cursor_position,
@@ -137,21 +162,11 @@ class MessageHandler(object):
             yield length, contents
 
 
-    def _start_pending_update(self, contents):
-        self._pending_update = contents
-    def _add_to_pending_update(self, contents):
-        if self._pending_update:
-            self._pending_update += contents
-    def _end_pending_update(self, contents):
-        if self._pending_update:
-            self._callbacks.update_contents(self._pending_update + contents)
-        self._pending_update = None
-
     def _contents_update(self):
         pattern = '%s\|(\d+)\|(.*)' % FULL_UPDATE_PREFIX
         with self._find_length_and_contents(pattern) as (length, contents):
             if contents != None:
-                self._pending_update = None
+                self._pending_update.reset()
                 self._remove_from_message(
                     '%s|%d|%s' % (FULL_UPDATE_PREFIX, length, contents)
                 )
@@ -166,7 +181,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (UPDATE_START_PREFIX, length, contents)
                 )
-                self._start_pending_update(contents)
+                self._pending_update.start(contents)
             return contents != None
 
     def _contents_part(self):
@@ -176,7 +191,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (UPDATE_PART_PREFIX, length, contents)
                 )
-                self._add_to_pending_update(contents[:length])
+                self._pending_update.add(contents[:length])
             return contents != None
 
     def _contents_end(self):
@@ -186,7 +201,7 @@ class MessageHandler(object):
                 self._remove_from_message(
                     '%s|%d|%s' % (UPDATE_END_PREFIX, length, contents)
                 )
-                self._end_pending_update(contents)
+                self._pending_update.end(contents)
             return contents != None
 
     def _cursor_position(self):
@@ -199,7 +214,7 @@ class MessageHandler(object):
                     '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
                 )
                 self._callbacks.apply_cursor_position(line, column)
-                self._pending_update = None
+                self._pending_update.reset()
             return group != None
 
     def _file_change(self):
@@ -210,7 +225,7 @@ class MessageHandler(object):
                     '%s|%d|%s' % (FILE_CHANGE_PREFIX, length, filename)
                 )
                 self._callbacks.file_changed(filename=filename)
-                self._pending_update = None
+                self._pending_update.reset()
             return filename != None
 
     def _save_file(self):
@@ -235,7 +250,7 @@ class MessageHandler(object):
         yield
         if do_take_control:
             self._callbacks.take_control()
-            self._pending_update = None
+            self._pending_update.reset()
 
     def process(self, messages):
         for message in [messages] if isinstance(messages, basestring) else messages:
