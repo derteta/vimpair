@@ -158,49 +158,38 @@ class MessageHandler(object):
     def _find_length_and_contents(self, prefix):
         expression = '%s\|(\d+)\|(.*)' % prefix
         with self._find_match(expression) as groups:
-            length = int(groups[0]) if groups else None
-            contents = groups[1][:length] if groups else None
-            yield length, contents
+            if groups:
+                length = int(groups[0])
+                contents = groups[1][:length]
+                self._remove_from_message('%s|%d|%s' % (prefix, length, contents))
+                yield length, contents
+            else:
+                yield None, None
 
 
     def _contents_update(self):
         with self._find_length_and_contents(FULL_UPDATE_PREFIX) as (length, contents):
             if contents != None:
-                self._remove_from_message(
-                    '%s|%d|%s' % (FULL_UPDATE_PREFIX, length, contents)
-                )
                 if length <= len(contents):
                     self._pending_update.start(contents)
                     self._pending_update.end('')
             return contents != None
 
     def _contents_start(self):
-        pattern = '%s\|(\d+)\|(.*)' % UPDATE_START_PREFIX
         with self._find_length_and_contents(UPDATE_START_PREFIX) as (length, contents):
             if contents != None:
-                self._remove_from_message(
-                    '%s|%d|%s' % (UPDATE_START_PREFIX, length, contents)
-                )
                 self._pending_update.start(contents)
             return contents != None
 
     def _contents_part(self):
-        pattern = '%s\|(\d+)\|(.*)' % UPDATE_PART_PREFIX
         with self._find_length_and_contents(UPDATE_PART_PREFIX) as (length, contents):
             if contents != None:
-                self._remove_from_message(
-                    '%s|%d|%s' % (UPDATE_PART_PREFIX, length, contents)
-                )
                 self._pending_update.add(contents[:length])
             return contents != None
 
     def _contents_end(self):
-        pattern = '%s\|(\d+)\|(.*)' % UPDATE_END_PREFIX
         with self._find_length_and_contents(UPDATE_END_PREFIX) as (length, contents):
             if contents != None:
-                self._remove_from_message(
-                    '%s|%d|%s' % (UPDATE_END_PREFIX, length, contents)
-                )
                 self._pending_update.end(contents)
             return contents != None
 
@@ -218,12 +207,8 @@ class MessageHandler(object):
             return group != None
 
     def _file_change(self):
-        pattern = '%s\|(\d+)\|(.*)' % FILE_CHANGE_PREFIX
         with self._find_length_and_contents(FILE_CHANGE_PREFIX) as (length, filename):
             if filename != None:
-                self._remove_from_message(
-                    '%s|%d|%s' % (FILE_CHANGE_PREFIX, length, filename)
-                )
                 self._callbacks.file_changed(filename=filename)
                 self._pending_update.reset()
             return filename != None
