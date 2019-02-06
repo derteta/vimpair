@@ -216,7 +216,7 @@ class MessageHandler(object):
     def _save_file(self):
         found = False
         if SAVE_FILE_MESSAGE in self._current_message:
-            self._current_message = self._current_message.replace(SAVE_FILE_MESSAGE, '')
+            self._remove_from_message(SAVE_FILE_MESSAGE)
             self._callbacks.save_file()
             found = True
         return found
