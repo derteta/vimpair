@@ -166,32 +166,47 @@ class MessageHandler(object):
             else:
                 yield None, None
 
+    def _handle_message_with_length(self, prefix, handler):
+        with self._extract_length_and_contents(prefix) as (length, contents):
+            if contents != None:
+                handler(length, contents)
+            return contents != None
+
 
     def _contents_update(self):
-        with self._extract_length_and_contents(FULL_UPDATE_PREFIX) as (length, contents):
-            if contents != None:
-                if length <= len(contents):
-                    self._pending_update.start(contents)
-                    self._pending_update.end('')
-            return contents != None
+
+        def handle(length, contents):
+            if length <= len(contents):
+                self._pending_update.start(contents)
+                self._pending_update.end('')
+
+        return self._handle_message_with_length(FULL_UPDATE_PREFIX, handle)
 
     def _contents_start(self):
-        with self._extract_length_and_contents(UPDATE_START_PREFIX) as (length, contents):
-            if contents != None:
-                self._pending_update.start(contents)
-            return contents != None
+        return self._handle_message_with_length(
+            UPDATE_START_PREFIX,
+            lambda _, contents: self._pending_update.start(contents)
+        )
 
     def _contents_part(self):
-        with self._extract_length_and_contents(UPDATE_PART_PREFIX) as (length, contents):
-            if contents != None:
-                self._pending_update.add(contents[:length])
-            return contents != None
+        return self._handle_message_with_length(
+            UPDATE_PART_PREFIX,
+            lambda length, contents: self._pending_update.add(contents[:length])
+        )
 
     def _contents_end(self):
-        with self._extract_length_and_contents(UPDATE_END_PREFIX) as (length, contents):
-            if contents != None:
-                self._pending_update.end(contents)
-            return contents != None
+        return self._handle_message_with_length(
+            UPDATE_END_PREFIX,
+            lambda _, contents: self._pending_update.end(contents)
+        )
+
+    def _file_change(self):
+
+        def handle_file_change(_, contents):
+            self._callbacks.file_changed(filename=contents)
+            self._pending_update.reset()
+
+        return self._handle_message_with_length(FILE_CHANGE_PREFIX, handle_file_change)
 
     def _cursor_position(self):
         pattern = '%s\|(\d+)\|(\d+)' % CURSOR_POSITION_PREFIX
@@ -205,13 +220,6 @@ class MessageHandler(object):
                 self._callbacks.apply_cursor_position(line, column)
                 self._pending_update.reset()
             return group != None
-
-    def _file_change(self):
-        with self._extract_length_and_contents(FILE_CHANGE_PREFIX) as (length, filename):
-            if filename != None:
-                self._callbacks.file_changed(filename=filename)
-                self._pending_update.reset()
-            return filename != None
 
     def _save_file(self):
         with self._find_match(SAVE_FILE_MESSAGE) as groups:
