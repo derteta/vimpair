@@ -239,20 +239,18 @@ class MessageHandler(object):
 
     def process(self, messages):
         for message in [messages] if isinstance(messages, basestring) else messages:
-            self._do_process(message)
+            with self._current_message_being(message):
+                with self._taking_control_when_told():
+                    self._process_current_message()
 
-    def _do_process(self, message):
-        with self._current_message_being(message):
-            with self._taking_control_when_told():
-                while True:
-                    match = _ANY_PREFIX.search(self._current_message)
-                    if match:
-                        process_call = self._prefix_to_process_call[match.group()]
-                        if not process_call():
-                            # If there is an error in the matched message
-                            # (e.g., negative cursor position), process_call will
-                            # return False. So we discard the message here.
-                            self._current_message = \
-                                self._current_message[match.start() + len(match.group()):]
-                    else:
-                        break
+    def _process_current_message(self):
+        match = _ANY_PREFIX.search(self._current_message)
+        while match is not None:
+            process_call = self._prefix_to_process_call[match.group()]
+            if not process_call():
+                # If there is an error in the matched message
+                # (e.g., negative cursor position), process_call will
+                # return False. So we discard the message here.
+                self._current_message = \
+                    self._current_message[match.start() + len(match.group()):]
+            match = _ANY_PREFIX.search(self._current_message)
