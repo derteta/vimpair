@@ -214,12 +214,11 @@ class MessageHandler(object):
             return filename != None
 
     def _save_file(self):
-        found = False
-        if SAVE_FILE_MESSAGE in self._current_message:
-            self._remove_from_message(SAVE_FILE_MESSAGE)
-            self._callbacks.save_file()
-            found = True
-        return found
+        with self._find_match(SAVE_FILE_MESSAGE) as groups:
+            if groups is not None:
+                self._remove_from_message(SAVE_FILE_MESSAGE)
+                self._callbacks.save_file()
+            return groups is not None
 
     @contextmanager
     def _current_message_being(self, message):
