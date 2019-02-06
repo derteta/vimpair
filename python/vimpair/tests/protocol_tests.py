@@ -615,13 +615,13 @@ class MessageHandlerSaveFileTests(TestCase):
         self.handler = MessageHandler(callbacks=self.callbacks)
 
 
-    def test_calls_file_changed_when_receiving_file_change_message(self):
+    def test_calls_save_file_when_receiving_save_file_message(self):
         # not checking for SAVE_FILE_MESSAGE to prevent false positives
         self.handler.process('VIMPAIR_SAVE_FILE')
 
         self.callbacks.save_file.assert_called()
 
-    def test_receiving_file_change_message_doesnt_interrupt_split_update(self):
+    def test_receiving_save_file_message_doesnt_interrupt_split_update(self):
         self.handler.process(
             UPDATE_START_PREFIX + '|2|1 '
             + SAVE_FILE_MESSAGE
