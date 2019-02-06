@@ -621,6 +621,13 @@ class MessageHandlerSaveFileTests(TestCase):
 
         self.callbacks.save_file.assert_called()
 
+    def test_doesnt_call_save_file_when_update_contents_contains_save_file_message(self):
+        self.handler.process(
+            FULL_UPDATE_PREFIX + '|33|Mentioning VIMPAIR_SAVE_FILE here'
+        )
+
+        self.callbacks.save_file.assert_not_called()
+
     def test_receiving_save_file_message_doesnt_interrupt_split_update(self):
         self.handler.process(
             UPDATE_START_PREFIX + '|2|1 '
