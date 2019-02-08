@@ -154,7 +154,6 @@ class MessageHandler(object):
         match = re.search(expression, self._current_message, re.DOTALL)
         yield match.groups() if match else None
 
-    @contextmanager
     def _extract_length_and_contents(self, prefix):
         expression = '%s\|(\d+)\|(.*)' % prefix
         with self._find_match(expression) as groups:
@@ -167,10 +166,10 @@ class MessageHandler(object):
                 yield None, None
 
     def _handle_message_with_length(self, prefix, handler):
-        with self._extract_length_and_contents(prefix) as (length, contents):
-            if contents != None:
-                handler(length, contents)
-            return contents != None
+        length, contents =  self._extract_length_and_contents(prefix)
+        if contents != None:
+            handler(length, contents)
+        return contents != None
 
 
     def _contents_update(self):
