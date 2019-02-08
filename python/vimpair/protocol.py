@@ -129,6 +129,11 @@ class PendingUpdate(object):
 
 class MessageHandler(object):
 
+    @staticmethod
+    def _find_match(message, expression):
+        match = re.search(expression, message, re.DOTALL)
+        return match.groups() if match else None
+
     def __init__(self, callbacks=None):
         self._leftover = ''
         self._current_message = ''
@@ -149,21 +154,15 @@ class MessageHandler(object):
     def _remove_from_message(self, string):
         self._current_message = self._current_message.replace(string, '')
 
-    @contextmanager
-    def _find_match(self, expression):
-        match = re.search(expression, self._current_message, re.DOTALL)
-        yield match.groups() if match else None
-
     def _extract_length_and_contents(self, prefix):
-        expression = '%s\|(\d+)\|(.*)' % prefix
-        with self._find_match(expression) as groups:
-            if groups:
-                length = int(groups[0])
-                contents = groups[1][:length]
-                self._remove_from_message('%s|%d|%s' % (prefix, length, contents))
-                yield length, contents
-            else:
-                yield None, None
+        groups = self._find_match(self._current_message, '%s\|(\d+)\|(.*)' % prefix)
+        if groups:
+            length = int(groups[0])
+            contents = groups[1][:length]
+            self._remove_from_message('%s|%d|%s' % (prefix, length, contents))
+            return length, contents
+        else:
+            return None, None
 
     def _handle_message_with_length(self, prefix, handler):
         length, contents =  self._extract_length_and_contents(prefix)
@@ -209,23 +208,23 @@ class MessageHandler(object):
 
     def _cursor_position(self):
         pattern = '%s\|(\d+)\|(\d+)' % CURSOR_POSITION_PREFIX
-        with self._find_match(pattern) as group:
-            if group != None:
-                line = int(group[0])
-                column = int(group[1])
-                self._remove_from_message(
-                    '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
-                )
-                self._callbacks.apply_cursor_position(line, column)
-                self._pending_update.reset()
-            return group != None
+        groups = self._find_match(self._current_message, pattern)
+        if groups is not  None:
+            line = int(groups[0])
+            column = int(groups[1])
+            self._remove_from_message(
+                '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
+            )
+            self._callbacks.apply_cursor_position(line, column)
+            self._pending_update.reset()
+        return groups != None
 
     def _save_file(self):
-        with self._find_match(SAVE_FILE_MESSAGE) as groups:
-            if groups is not None:
-                self._remove_from_message(SAVE_FILE_MESSAGE)
-                self._callbacks.save_file()
-            return groups is not None
+        groups = self._find_match(self._current_message, SAVE_FILE_MESSAGE)
+        if groups is not None:
+            self._remove_from_message(SAVE_FILE_MESSAGE)
+            self._callbacks.save_file()
+        return groups is not None
 
     @contextmanager
     def _current_message_being(self, message):
