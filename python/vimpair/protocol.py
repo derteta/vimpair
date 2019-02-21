@@ -227,13 +227,6 @@ class MessageHandler(object):
         return groups is not None
 
     @contextmanager
-    def _current_message_being(self, message):
-        self._current_message = self._leftover + message
-        yield
-        self._leftover = self._current_message.replace(self._leftover, '')
-        self._current_message = ''
-
-    @contextmanager
     def _taking_control_when_told(self):
         do_take_control = TAKE_CONTROL_MESSAGE in self._current_message
         self._current_message = self._current_message.split(TAKE_CONTROL_MESSAGE)[0]
@@ -241,12 +234,14 @@ class MessageHandler(object):
         if do_take_control:
             self._callbacks.take_control()
             self._pending_update.reset()
+            self._leftover = ''
 
     def process(self, messages):
-        for message in [messages] if isinstance(messages, basestring) else messages:
-            with self._current_message_being(message):
-                with self._taking_control_when_told():
-                    self._process_current_message()
+        all_messages = reduce(lambda s1, s2: s1 + s2, messages or [''])
+        self._current_message = self._leftover + all_messages
+        with self._taking_control_when_told():
+            self._process_current_message()
+            self._leftover = self._current_message.replace(self._leftover, '')
 
     def _process_current_message(self):
         match = _ANY_PREFIX.search(self._current_message)

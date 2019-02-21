@@ -587,6 +587,25 @@ class MessageHandlerTakeControlTests(TestCase):
 
         context.expected_callback(self.callbacks).assert_not_called()
 
+    @data(
+        TC(
+            'full_update',
+            message=FULL_UPDATE_PREFIX + '|5|Short',
+            expected_callback=lambda s: s.update_contents,
+        ),
+        TC(
+            'cursor',
+            message=CURSOR_POSITION_PREFIX + '|1|1',
+            expected_callback=lambda s: s.apply_cursor_position,
+        ),
+    )
+    def test_messages_received_after_taking_control_are_not_processed(self, context,):
+        message = [TAKE_CONTROL_MESSAGE, context.message]
+
+        self.handler.process(message)
+
+        context.expected_callback(self.callbacks).assert_not_called()
+
 
 class MessageHandlerFileChangeTests(TestCase):
 
