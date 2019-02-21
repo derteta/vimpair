@@ -561,7 +561,7 @@ class MessageHandlerTakeControlTests(TestCase):
             expected_callback=lambda s: s.apply_cursor_position,
         ),
     )
-    def test_message_before_take_control_are_processed(self, context,):
+    def test_messages_before_take_control_are_processed(self, context,):
         message = context.message + TAKE_CONTROL_MESSAGE
 
         self.handler.process(message)
@@ -580,7 +580,7 @@ class MessageHandlerTakeControlTests(TestCase):
             expected_callback=lambda s: s.apply_cursor_position,
         ),
     )
-    def test_message_after_take_control_are_processed(self, context,):
+    def test_messages_after_take_control_are_not_processed(self, context,):
         message = TAKE_CONTROL_MESSAGE + context.message
 
         self.handler.process(message)
