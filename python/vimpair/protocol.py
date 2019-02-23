@@ -161,20 +161,14 @@ class MessageHandler(object):
 
     def _extract_length_and_contents(self, prefix):
         groups = self._find_match(self._current_message, '%s\|(\d+)\|(.*)' % prefix)
-        if groups:
-            length = int(groups[0])
-            contents = groups[1][:length]
-            self._remove_from_message('%s|%d|%s' % (prefix, length, contents))
-            return length, contents
-        else:
-            return None, None
+        length = int(groups[0])
+        contents = groups[1][:length]
+        self._remove_from_message('%s|%d|%s' % (prefix, length, contents))
+        return length, contents
 
     def _handle_message_with_length(self, prefix, handler):
         length, contents =  self._extract_length_and_contents(prefix)
-        if contents != None:
-            handler(length, contents)
-        return contents != None
-
+        handler(length, contents)
 
     def _contents_update(self):
 
@@ -183,22 +177,22 @@ class MessageHandler(object):
                 self._pending_update.start(contents)
                 self._pending_update.end('')
 
-        return self._handle_message_with_length(FULL_UPDATE_PREFIX, handle)
+        self._handle_message_with_length(FULL_UPDATE_PREFIX, handle)
 
     def _contents_start(self):
-        return self._handle_message_with_length(
+        self._handle_message_with_length(
             UPDATE_START_PREFIX,
             lambda _, contents: self._pending_update.start(contents)
         )
 
     def _contents_part(self):
-        return self._handle_message_with_length(
+        self._handle_message_with_length(
             UPDATE_PART_PREFIX,
             lambda length, contents: self._pending_update.add(contents[:length])
         )
 
     def _contents_end(self):
-        return self._handle_message_with_length(
+        self._handle_message_with_length(
             UPDATE_END_PREFIX,
             lambda _, contents: self._pending_update.end(contents)
         )
@@ -209,27 +203,20 @@ class MessageHandler(object):
             self._callbacks.file_changed(filename=contents)
             self._pending_update.reset()
 
-        return self._handle_message_with_length(FILE_CHANGE_PREFIX, handle_file_change)
+        self._handle_message_with_length(FILE_CHANGE_PREFIX, handle_file_change)
 
     def _cursor_position(self):
         pattern = '%s\|(\d+)\|(\d+)' % CURSOR_POSITION_PREFIX
         groups = self._find_match(self._current_message, pattern)
-        if groups is not  None:
-            line = int(groups[0])
-            column = int(groups[1])
-            self._remove_from_message(
-                '%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column)
-            )
-            self._callbacks.apply_cursor_position(line, column)
-            self._pending_update.reset()
-        return groups != None
+        line, column = map(int, groups[:2])
+        self._remove_from_message('%s|%d|%d' % (CURSOR_POSITION_PREFIX, line, column))
+        self._callbacks.apply_cursor_position(line, column)
+        self._pending_update.reset()
 
     def _save_file(self):
         groups = self._find_match(self._current_message, SAVE_FILE_MESSAGE)
-        if groups is not None:
-            self._remove_from_message(SAVE_FILE_MESSAGE)
-            self._callbacks.save_file()
-        return groups is not None
+        self._remove_from_message(SAVE_FILE_MESSAGE)
+        self._callbacks.save_file()
 
     @contextmanager
     def _taking_control_when_told(self):
