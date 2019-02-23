@@ -32,7 +32,6 @@ _ANY_PREFIX = re.compile('%s|%s|%s|%s|%s|%s|%s' % (
 ))
 
 _noop = lambda *a, **k: None
-_ensure_callable = lambda call: call if callable(call) else _noop
 
 def generate_contents_update_messages(contents):
 
