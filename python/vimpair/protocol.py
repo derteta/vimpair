@@ -129,10 +129,15 @@ class PendingUpdate(object):
 
 class MessageHandler(object):
 
+    class MessageMatchingError(RuntimeError):
+        pass
+
     @staticmethod
     def _find_match(message, expression):
         match = re.search(expression, message, re.DOTALL)
-        return match.groups() if match else None
+        if not match:
+            raise MessageHandler.MessageMatchingError
+        return match.groups()
 
     def __init__(self, callbacks=None):
         self._leftover = ''
@@ -246,11 +251,13 @@ class MessageHandler(object):
     def _process_current_message(self):
         match = _ANY_PREFIX.search(self._current_message)
         while match is not None:
-            process_call = self._prefix_to_process_call[match.group()]
-            if not process_call():
-                # If there is an error in the matched message
-                # (e.g., negative cursor position), process_call will
-                # return False. So we discard the message here.
+            try:
+                process_call = self._prefix_to_process_call[match.group()]
+                process_call()
+            except MessageHandler.MessageMatchingError:
+                # This can happen if the contained message doesn't have
+                # the correct form (i.e., negative cursor position).
+                # So we discard the message here.
                 self._current_message = \
                     self._current_message[match.start() + len(match.group()):]
             match = _ANY_PREFIX.search(self._current_message)
