@@ -10,7 +10,6 @@ from .constants import (
     TAKE_CONTROL_MESSAGE,
     FILE_CHANGE_PREFIX,
     SAVE_FILE_MESSAGE,
-    MESSAGE_LENGTH,
 )
 
 

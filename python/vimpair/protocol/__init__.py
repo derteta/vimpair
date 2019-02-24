@@ -18,6 +18,4 @@ from .generate_messages import (
     generate_take_control_message,
 )
 
-from .protocol import (
-    MessageHandler,
-)
+from .handle_messages import MessageHandler
