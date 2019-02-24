@@ -10,12 +10,14 @@ from .constants import (
     MESSAGE_LENGTH,
 )
 
-from .protocol import (
+from .generate_messages import (
     generate_contents_update_messages,
     generate_cursor_position_message,
     generate_file_change_message,
     generate_save_file_message,
     generate_take_control_message,
+)
 
+from .protocol import (
     MessageHandler,
 )
