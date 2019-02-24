@@ -1,4 +1,4 @@
-from .protocol import (
+from .constants import (
     FULL_UPDATE_PREFIX,
     UPDATE_START_PREFIX,
     UPDATE_PART_PREFIX,
@@ -8,7 +8,9 @@ from .protocol import (
     FILE_CHANGE_PREFIX,
     SAVE_FILE_MESSAGE,
     MESSAGE_LENGTH,
+)
 
+from .protocol import (
     generate_contents_update_messages,
     generate_cursor_position_message,
     generate_file_change_message,
