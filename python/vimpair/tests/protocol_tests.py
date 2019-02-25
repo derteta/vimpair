@@ -561,7 +561,7 @@ class MessageHandlerTakeControlTests(TestCase):
             expected_callback=lambda s: s.apply_cursor_position,
         ),
     )
-    def test_message_before_take_control_are_processed(self, context,):
+    def test_messages_before_take_control_are_processed(self, context,):
         message = context.message + TAKE_CONTROL_MESSAGE
 
         self.handler.process(message)
@@ -580,8 +580,27 @@ class MessageHandlerTakeControlTests(TestCase):
             expected_callback=lambda s: s.apply_cursor_position,
         ),
     )
-    def test_message_after_take_control_are_processed(self, context,):
+    def test_messages_after_take_control_are_not_processed(self, context,):
         message = TAKE_CONTROL_MESSAGE + context.message
+
+        self.handler.process(message)
+
+        context.expected_callback(self.callbacks).assert_not_called()
+
+    @data(
+        TC(
+            'full_update',
+            message=FULL_UPDATE_PREFIX + '|5|Short',
+            expected_callback=lambda s: s.update_contents,
+        ),
+        TC(
+            'cursor',
+            message=CURSOR_POSITION_PREFIX + '|1|1',
+            expected_callback=lambda s: s.apply_cursor_position,
+        ),
+    )
+    def test_messages_received_after_taking_control_are_not_processed(self, context,):
+        message = [TAKE_CONTROL_MESSAGE, context.message]
 
         self.handler.process(message)
 
@@ -615,13 +634,20 @@ class MessageHandlerSaveFileTests(TestCase):
         self.handler = MessageHandler(callbacks=self.callbacks)
 
 
-    def test_calls_file_changed_when_receiving_file_change_message(self):
+    def test_calls_save_file_when_receiving_save_file_message(self):
         # not checking for SAVE_FILE_MESSAGE to prevent false positives
         self.handler.process('VIMPAIR_SAVE_FILE')
 
         self.callbacks.save_file.assert_called()
 
-    def test_receiving_file_change_message_doesnt_interrupt_split_update(self):
+    def test_doesnt_call_save_file_when_update_contents_contains_save_file_message(self):
+        self.handler.process(
+            FULL_UPDATE_PREFIX + '|33|Mentioning VIMPAIR_SAVE_FILE here'
+        )
+
+        self.callbacks.save_file.assert_not_called()
+
+    def test_receiving_save_file_message_doesnt_interrupt_split_update(self):
         self.handler.process(
             UPDATE_START_PREFIX + '|2|1 '
             + SAVE_FILE_MESSAGE
