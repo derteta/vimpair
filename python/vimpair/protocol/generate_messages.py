@@ -52,7 +52,7 @@ def generate_contents_update_messages(contents):
     messages = []
     if contents is not None:
         num_parts = get_number_of_parts(contents)
-        for index in xrange(0, num_parts):
+        for index in range(0, num_parts):
             prefix = get_part_prefix(index, num_parts)
             part_size = get_part_size(contents_length, index, num_parts)
             part_contents = contents[:part_size]

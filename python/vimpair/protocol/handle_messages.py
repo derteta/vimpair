@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from functools import reduce
 import re
 
 from .constants import (

@@ -1,3 +1,6 @@
+from functools import reduce
+
+
 def get_current_contents(vim=None):
     ''' returns the contents of current buffer/file as one string '''
     try:
