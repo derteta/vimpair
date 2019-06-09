@@ -69,6 +69,19 @@ class ClientConnector(ConnectionHolder):
             self._server_socket = None
 
 
+class SingleThreadedClientConnector(ClientConnector):
+
+    def _start_waiting_for_client(self):
+        self._wait_for_client = True
+        self._check_for_new_connection_to_client()
+
+    def _stop_waiting_for_client(self):
+        self._wait_for_client = False
+
+    def set_waiting_for_connection(self, waiting):
+        self._wait_for_client = waiting
+
+
 class ServerConnector(ConnectionHolder):
 
     def __init__(self, socket_factory):
