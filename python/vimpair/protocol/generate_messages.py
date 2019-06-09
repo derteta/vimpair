@@ -69,7 +69,9 @@ def generate_file_change_message(filename, folderpath=None, conceal_path=False):
     contents = (filename or '').strip()
     if contents and folderpath:
         contents = path.join(
-            sha224(folderpath).hexdigest() if conceal_path else folderpath,
+            sha224(folderpath.encode('utf-8')).hexdigest()
+                if conceal_path
+                else folderpath,
             contents
         )
     return '%s|%d|%s' % (FILE_CHANGE_PREFIX, len(contents), contents)

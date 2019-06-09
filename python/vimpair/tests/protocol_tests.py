@@ -255,7 +255,7 @@ class GenerateFileChangeMessageTests(TestCase):
             conceal_path=True,
         )
 
-        concealed_path = sha224(folderpath).hexdigest()
+        concealed_path = sha224(folderpath.encode('utf-8')).hexdigest()
         self.assertTrue(message.endswith(path.join(concealed_path, filename)), message)
 
 
