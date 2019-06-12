@@ -3,6 +3,7 @@ execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
 python from connectors import SingleThreadedClientConnector
+python import vimpair
 
 python ClientConnector = SingleThreadedClientConnector
 
@@ -210,7 +211,7 @@ function! VPServerTest_doesnt_send_save_file_message_when_saving_after_handover(
 endfunction
 
 function! VPServerTest_doesnt_send_take_control_message_while_waiting_for_client()
-  python connector.set_waiting_for_connection(True)
+  python vimpair.connector.set_waiting_for_connection(True)
 
   VimpairHandover
 
