@@ -1,7 +1,7 @@
-python from mock import Mock
 execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
+call g:VimpairRunPython("from mock import Mock")
 
 let g:VimpairShowStatusMessages = 0
 let g:VimpairTimerInterval = 1
@@ -9,9 +9,10 @@ let g:VimpairTimerInterval = 1
 function! _VPClientTest_set_up()
   execute("vnew")
   let g:VPClientTest_SentMessages = []
-  python fake_socket = Mock(sendall=
-        \ lambda b: vim.command('call add(g:VPClientTest_SentMessages, "%s")' % str(b)))
-  python client_socket_factory = lambda: fake_socket
+  call g:VimpairRunPython(
+        \ "fake_socket = Mock(sendall=lambda b: vim.command(
+        \     'call add(g:VPClientTest_SentMessages, \"%s\")' % str(b)))")
+  call g:VimpairRunPython("client_socket_factory = lambda: fake_socket")
   VimpairClientStart
 endfunction
 
@@ -22,8 +23,11 @@ function! _VPClientTest_tear_down()
 endfunction
 
 function! s:VPClientTest_set_received_messages(messages)
-  python received_messages = list(vim.eval('a:messages'))
-  python fake_socket.recv = lambda *a: received_messages.pop()
+  let g:VPClientTest_ReceivedMessages = a:messages
+  call g:VimpairRunPython(
+        \ "received_messages = list(vim.eval('g:VPClientTest_ReceivedMessages'))")
+  call g:VimpairRunPython("fake_socket.recv = lambda *a: received_messages.pop()")
+  unlet g:VPClientTest_ReceivedMessages
 endfunction
 
 function! s:VPClientTest_take_control()
@@ -202,9 +206,11 @@ function! VPClientTest_creates_new_buffer_with_filename_on_receiving_file_change
 
   " On Mac, we set up the session folder in /var/folders/..., but vim reports
   " the buffer path as /private/var/folders/..., which is synonymous
-  python vim.command('let expected = "%s"' % session.prepend_folder("SomeFile.py"))
-  call assert_match(".*" . expected, expand("%"))
-  unlet expected
+  call g:VimpairRunPython(
+        \ "vim.command(
+        \     'let g:VPServerTests_expected = \"%s\"' % session.prepend_folder('SomeFile.py'))")
+  call assert_match(".*" . g:VPServerTests_expected, expand("%"))
+  unlet g:VPServerTests_expected
 endfunction
 
 function! VPClientTest_doesnt_send_file_change_on_change_after_taking_control()
@@ -226,9 +232,11 @@ function! VPClientTest_saves_current_file_when_receiving_save_message()
   call s:VPClientTest_set_received_messages(["VIMPAIR_SAVE_FILE"])
   call s:VPClientTest_wait_for_timer()
 
-  python vim.command('let expected = "%s"' % session.prepend_folder("Folder/SomeFile.py"))
-  call assert_false(empty(glob(expected)))
-  unlet expected
+  call g:VimpairRunPython(
+        \ "vim.command(
+        \     'let g:VPServerTests_expected = \"%s\"' % session.prepend_folder('Folder/SomeFile.py'))")
+  call assert_false(empty(glob(g:VPServerTests_expected)))
+  unlet g:VPServerTests_expected
 endfunction
 
 

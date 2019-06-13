@@ -1,3 +1,9 @@
+let s:VimpairPythonCommand="python"
+
+function! g:VimpairRunPython(command)
+  execute(s:VimpairPythonCommand . " " . a:command)
+endfunction
+
 python << EOF
 import sys, os, vim
 script_path = vim.eval('expand("<sfile>:p:h")')
@@ -33,13 +39,14 @@ let g:VimpairTimerInterval = 200
 
 function! s:VimpairStartObserving()
   augroup VimpairEditorObservers
-    autocmd TextChanged * python vimpair.send_contents_update()
-    autocmd TextChangedI * python vimpair.send_contents_update()
-    autocmd InsertLeave * python vimpair.update_contents_and_cursor()
-    autocmd CursorMoved * python vimpair.send_cursor_position()
-    autocmd CursorMovedI * python vimpair.send_cursor_position()
-    autocmd BufEnter * python vimpair.send_file_change()
-    autocmd BufWritePost * python vimpair.send_file_change() ; vimpair.send_save_file()
+    autocmd TextChanged * call g:VimpairRunPython("vimpair.send_contents_update()")
+    autocmd TextChangedI * call g:VimpairRunPython("vimpair.send_contents_update()")
+    autocmd InsertLeave * call g:VimpairRunPython("vimpair.update_contents_and_cursor()")
+    autocmd CursorMoved * call g:VimpairRunPython("vimpair.send_cursor_position()")
+    autocmd CursorMovedI * call g:VimpairRunPython("vimpair.send_cursor_position()")
+    autocmd BufEnter * call g:VimpairRunPython("vimpair.send_file_change()")
+    autocmd BufWritePost * call g:VimpairRunPython(
+          \ "vimpair.send_file_change(); vimpair.send_save_file()")
   augroup END
 endfunction
 
@@ -70,14 +77,14 @@ endfunction
 
 function! s:VimpairStartReceivingMessagesTimer()
   call s:VimpairStartTimer(
-        \  "python message_handler.process(" .
+        \  "call g:VimpairRunPython(\"message_handler.process(" .
         \  "    vimpair.connector.connection.received_messages" .
-        \  ")"
+        \  ")\")"
         \)
 endfunction
 
 function! s:VimpairStartCheckingForClientTimer()
-  call s:VimpairStartTimer("python vimpair.check_for_new_client()")
+  call s:VimpairStartTimer("call g:VimpairRunPython('vimpair.check_for_new_client()')")
 endfunction
 
 
@@ -86,8 +93,8 @@ function! s:VimpairInitialize()
     autocmd VimLeavePre * call s:VimpairCleanup()
   augroup END
 
-  python message_handler =
-        \ MessageHandler(callbacks=vimpair.VimCallbacks(vim=vim, session=session))
+  call g:VimpairRunPython("message_handler
+        \ = MessageHandler(callbacks=vimpair.VimCallbacks(vim=vim, session=session))")
 endfunction
 
 function! s:VimpairCleanup()
@@ -98,20 +105,20 @@ function! s:VimpairCleanup()
     autocmd!
   augroup END
 
-  python message_handler = None
-  python vimpair.connector.disconnect()
+  call g:VimpairRunPython("message_handler = None")
+  call g:VimpairRunPython("vimpair.connector.disconnect()")
 endfunction
 
 
 function! VimpairServerStart()
   call s:VimpairInitialize()
 
-  python vimpair.connector = ClientConnector(server_socket_factory)
+  call g:VimpairRunPython("vimpair.connector = ClientConnector(server_socket_factory)")
 
   call s:VimpairStartCheckingForClientTimer()
   call s:VimpairStartObserving()
-  python vimpair.send_file_change.enabled = True
-  python vimpair.send_file_change()
+  call g:VimpairRunPython("vimpair.send_file_change.enabled = True")
+  call g:VimpairRunPython("vimpair.send_file_change()")
 endfunction
 
 function! VimpairServerStop()
@@ -120,24 +127,24 @@ endfunction
 
 
 function! VimpairClientStart()
-  python session = Session()
+  call g:VimpairRunPython("session = Session()")
   call s:VimpairInitialize()
 
-  python vimpair.connector = ServerConnector(client_socket_factory)
+  call g:VimpairRunPython("vimpair.connector = ServerConnector(client_socket_factory)")
 
-  python vimpair.send_file_change.enabled = False
+  call g:VimpairRunPython("vimpair.send_file_change.enabled = False")
   call s:VimpairStartReceivingMessagesTimer()
 endfunction
 
 function! VimpairClientStop()
   call s:VimpairCleanup()
-  python session.end()
-  python session = None
+  call g:VimpairRunPython("session.end()")
+  call g:VimpairRunPython("session = None")
 endfunction
 
 
 function! VimpairHandover()
-  python vimpair.hand_over_control()
+  call g:VimpairRunPython("vimpair.hand_over_control()")")
 endfunction
 
 

@@ -1,11 +1,11 @@
-python from mock import Mock
 execute("source " . expand("<sfile>:p:h") . "/test_tools.vim")
 execute("source " . expand("<sfile>:p:h") . "/../vimpair.vim")
 
-python from connectors import SingleThreadedClientConnector
-python import vimpair
+call g:VimpairRunPython("from mock import Mock")
+call g:VimpairRunPython("from connectors import SingleThreadedClientConnector")
+call g:VimpairRunPython("import vimpair")
 
-python ClientConnector = SingleThreadedClientConnector
+call g:VimpairRunPython("ClientConnector = SingleThreadedClientConnector")
 
 let g:VimpairShowStatusMessages = 0
 let g:VimpairConcealFilePaths = 0
@@ -14,9 +14,12 @@ let g:VimpairTimerInterval = 1
 function! _VPServerTest_set_up()
   execute("vnew")
   let g:VPServerTest_SentMessages = []
-  python fake_socket = Mock(sendall=
-        \ lambda b: vim.command('call add(g:VPServerTest_SentMessages, "%s")' % str(b)))
-  python server_socket_factory = lambda: Mock(get_client_connection=lambda : fake_socket)
+  call g:VimpairRunPython(
+        \ "fake_socket = Mock(sendall=lambda b: vim.command(
+        \     'call add(g:VPServerTest_SentMessages, \"%s\")' % str(b)))")
+  call g:VimpairRunPython(
+        \ "server_socket_factory =
+        \      lambda: Mock(get_client_connection=lambda: fake_socket)")
   VimpairServerStart
 endfunction
 
@@ -158,8 +161,8 @@ endfunction
 
 function! VPServerTest_applies_received_updates_after_handover()
   VimpairHandover
-  python received_messages = ["VIMPAIR_FULL_UPDATE|16|This is line one"]
-  python fake_socket.recv = lambda *a: received_messages.pop()
+  call g:VimpairRunPython("received_messages = [\"VIMPAIR_FULL_UPDATE|16|This is line one\"]")
+  call g:VimpairRunPython("fake_socket.recv = lambda *a: received_messages.pop()")
 
   call s:VPServerTest_wait_for_timer()
 
@@ -211,7 +214,7 @@ function! VPServerTest_doesnt_send_save_file_message_when_saving_after_handover(
 endfunction
 
 function! VPServerTest_doesnt_send_take_control_message_while_waiting_for_client()
-  python vimpair.connector.set_waiting_for_connection(True)
+  call g:VimpairRunPython("vimpair.connector.set_waiting_for_connection(True)")
 
   VimpairHandover
 
