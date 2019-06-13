@@ -4,32 +4,24 @@ function! g:VimpairRunPython(command)
   execute(s:VimpairPythonCommand . " " . a:command)
 endfunction
 
-python << EOF
-import sys, os, vim
-script_path = vim.eval('expand("<sfile>:p:h")')
-python_path = os.path.abspath(os.path.join(script_path, '..', 'python', 'vimpair'))
+call g:VimpairRunPython("import sys, os, vim")
+call g:VimpairRunPython(
+      \ "sys.path.append(os.path.abspath(os.path.join('"
+      \ . expand("<sfile>:p:h") . "', '..', 'python', 'vimpair')))")
 
-if not python_path in sys.path:
-    sys.path.append(python_path)
+call g:VimpairRunPython(
+      \"import vimpair                                                   \n
+      \from connection import create_client_socket, create_server_socket \n
+      \from connectors import ClientConnector, ServerConnector           \n
+      \from protocol import MessageHandler                               \n
+      \from session import Session")
 
-import vimpair
-from connection import (
-    create_client_socket,
-    create_server_socket,
-)
-from connectors import ClientConnector, ServerConnector
-from protocol import MessageHandler
-from session import Session
-
-vimpair.vim = vim
-
-server_socket_factory = create_server_socket
-client_socket_factory = create_client_socket
-
-session = None
-message_handler = None
-
-EOF
+call g:VimpairRunPython(
+      \"vimpair.vim = vim                           \n
+      \server_socket_factory = create_server_socket \n
+      \client_socket_factory = create_client_socket \n
+      \session = None                               \n
+      \message_handler = None")
 
 
 let g:VimpairShowStatusMessages = 1
