@@ -1,4 +1,11 @@
-let s:VimpairPythonCommand="python"
+if has("python3")
+  let s:VimpairPythonCommand="python3"
+elseif has("python")
+  let s:VimpairPythonCommand="python"
+else
+  echo "Vimpair needs to be run with python- or python3 support enabled!"
+  finish
+endif
 
 function! g:VimpairRunPython(command)
   execute(s:VimpairPythonCommand . " " . a:command)
