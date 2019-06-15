@@ -48,7 +48,7 @@ def create_client_socket():
         sock.settimeout(.1)
         sock.connect((SERVER_ADDRESS, SERVER_PORT))
     except Exception as e:
-        print str(e)
+        print(str(e))
         sock.close()
         sock = None
     finally:

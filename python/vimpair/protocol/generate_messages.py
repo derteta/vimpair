@@ -52,7 +52,7 @@ def generate_contents_update_messages(contents):
     messages = []
     if contents is not None:
         num_parts = get_number_of_parts(contents)
-        for index in xrange(0, num_parts):
+        for index in range(0, num_parts):
             prefix = get_part_prefix(index, num_parts)
             part_size = get_part_size(contents_length, index, num_parts)
             part_contents = contents[:part_size]
@@ -69,7 +69,9 @@ def generate_file_change_message(filename, folderpath=None, conceal_path=False):
     contents = (filename or '').strip()
     if contents and folderpath:
         contents = path.join(
-            sha224(folderpath).hexdigest() if conceal_path else folderpath,
+            sha224(folderpath.encode('utf-8')).hexdigest()
+                if conceal_path
+                else folderpath,
             contents
         )
     return '%s|%d|%s' % (FILE_CHANGE_PREFIX, len(contents), contents)

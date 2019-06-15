@@ -1,130 +1,34 @@
-python << EOF
-import sys, os, vim
-script_path = vim.eval('expand("<sfile>:p:h")')
-python_path = os.path.abspath(os.path.join(script_path, '..', 'python', 'vimpair'))
+if has("python3")
+  let s:VimpairPythonCommand="python3"
+elseif has("python")
+  let s:VimpairPythonCommand="python"
+else
+  echo "Vimpair needs to be run with python- or python3 support enabled!"
+  finish
+endif
 
-if not python_path in sys.path:
-    sys.path.append(python_path)
+function! g:VimpairRunPython(command)
+  execute(s:VimpairPythonCommand . " " . a:command)
+endfunction
 
+call g:VimpairRunPython("import sys, os, vim")
+call g:VimpairRunPython(
+      \ "sys.path.append(os.path.abspath(os.path.join('"
+      \ . expand("<sfile>:p:h") . "', '..', 'python', 'vimpair')))")
 
-from functools import partial
+call g:VimpairRunPython(
+      \"import vimpair                                                   \n
+      \from connection import create_client_socket, create_server_socket \n
+      \from connectors import ClientConnector, ServerConnector           \n
+      \from protocol import MessageHandler                               \n
+      \from session import Session")
 
-from connection import (
-    create_client_socket,
-    create_server_socket,
-)
-from connectors import ClientConnector, ServerConnector
-from protocol import (
-    generate_contents_update_messages,
-    generate_cursor_position_message,
-    generate_file_change_message,
-    generate_take_control_message,
-    generate_save_file_message,
-    MessageHandler,
-)
-from session import Session
-from vim_interface import (
-    apply_contents_update,
-    apply_cursor_position,
-    get_current_contents,
-    get_current_filename,
-    get_current_path,
-    get_cursor_position,
-    switch_to_buffer,
-)
-
-
-session = None
-
-server_socket_factory = create_server_socket
-client_socket_factory = create_client_socket
-
-connector = None
-message_handler = None
-
-_vim_int = lambda name: int(vim.eval(name))
-
-class SendFileChange(object):
-
-    enabled = True
-
-    def __call__(self):
-        if self.enabled:
-            message = generate_file_change_message(
-                get_current_filename(vim=vim),
-                folderpath=get_current_path(vim=vim),
-                conceal_path=_vim_int('g:VimpairConcealFilePaths') != 0,
-            )
-            connector.connection.send_message(message)
-            update_contents_and_cursor()
-
-
-def show_status_message(message):
-    if _vim_int('g:VimpairShowStatusMessages') != 0:
-        print 'Vimpair:', message
-
-
-def send_contents_update():
-    contents = get_current_contents(vim=vim)
-    messages = generate_contents_update_messages(contents)
-    for message in messages:
-        connector.connection.send_message(message)
-
-def send_cursor_position():
-    line, column = get_cursor_position(vim=vim)
-    connector.connection.send_message(generate_cursor_position_message(line, column))
-
-def update_contents_and_cursor():
-    send_contents_update()
-    send_cursor_position()
-
-def send_save_file():
-    message = generate_save_file_message()
-    connector.connection.send_message(message)
-
-send_file_change = SendFileChange()
-
-def check_for_new_client():
-    if not connector.is_waiting_for_connection:
-        update_contents_and_cursor()
-        vim.command('call s:VimpairStopTimer()')
-
-def hand_over_control():
-    if connector.is_waiting_for_connection:
-        show_status_message('No client connected')
-    else:
-        show_status_message('Handing over control')
-        vim.command('call s:VimpairStopObserving()')
-        connector.connection.send_message(generate_take_control_message())
-        vim.command('call s:VimpairStartReceivingMessagesTimer()')
-
-
-class VimCallbacks(object):
-
-    def __init__(self, vim=None):
-        self._vim = vim
-        self.update_contents = partial(apply_contents_update, vim=vim)
-        self.apply_cursor_position = partial(apply_cursor_position, vim=vim)
-
-    def take_control(self):
-        show_status_message('You are in control now!')
-        self._vim.command('call s:VimpairStopTimer()')
-        self._vim.command('call s:VimpairStartObserving()')
-
-    def file_changed(self, filename=None):
-        switch_to_buffer(session.prepend_folder(filename), vim=self._vim)
-
-    def save_file(self):
-        filename = get_current_filename(vim=self._vim)
-        if filename:
-            path = get_current_path(vim=self._vim)
-            if not os.path.exists(path):
-                os.makedirs(path)
-            filename_and_path = os.path.join(path, filename)
-            show_status_message('Saving file "%s"' % filename_and_path)
-            self._vim.command('silent write! ' + filename_and_path)
-
-EOF
+call g:VimpairRunPython(
+      \"vimpair.vim = vim                           \n
+      \server_socket_factory = create_server_socket \n
+      \client_socket_factory = create_client_socket \n
+      \session = None                               \n
+      \message_handler = None")
 
 
 let g:VimpairShowStatusMessages = 1
@@ -134,13 +38,14 @@ let g:VimpairTimerInterval = 200
 
 function! s:VimpairStartObserving()
   augroup VimpairEditorObservers
-    autocmd TextChanged * python send_contents_update()
-    autocmd TextChangedI * python send_contents_update()
-    autocmd InsertLeave * python update_contents_and_cursor()
-    autocmd CursorMoved * python send_cursor_position()
-    autocmd CursorMovedI * python send_cursor_position()
-    autocmd BufEnter * python send_file_change()
-    autocmd BufWritePost * python send_file_change() ; send_save_file()
+    autocmd TextChanged * call g:VimpairRunPython("vimpair.send_contents_update()")
+    autocmd TextChangedI * call g:VimpairRunPython("vimpair.send_contents_update()")
+    autocmd InsertLeave * call g:VimpairRunPython("vimpair.update_contents_and_cursor()")
+    autocmd CursorMoved * call g:VimpairRunPython("vimpair.send_cursor_position()")
+    autocmd CursorMovedI * call g:VimpairRunPython("vimpair.send_cursor_position()")
+    autocmd BufEnter * call g:VimpairRunPython("vimpair.send_file_change()")
+    autocmd BufWritePost * call g:VimpairRunPython(
+          \ "vimpair.send_file_change(); vimpair.send_save_file()")
   augroup END
 endfunction
 
@@ -171,14 +76,14 @@ endfunction
 
 function! s:VimpairStartReceivingMessagesTimer()
   call s:VimpairStartTimer(
-        \  "python message_handler.process(" .
-        \  "    connector.connection.received_messages" .
-        \  ")"
+        \  "call g:VimpairRunPython(\"message_handler.process(" .
+        \  "    vimpair.connector.connection.received_messages" .
+        \  ")\")"
         \)
 endfunction
 
 function! s:VimpairStartCheckingForClientTimer()
-  call s:VimpairStartTimer("python check_for_new_client()")
+  call s:VimpairStartTimer("call g:VimpairRunPython('vimpair.check_for_new_client()')")
 endfunction
 
 
@@ -187,7 +92,8 @@ function! s:VimpairInitialize()
     autocmd VimLeavePre * call s:VimpairCleanup()
   augroup END
 
-  python message_handler = MessageHandler(callbacks=VimCallbacks(vim=vim))
+  call g:VimpairRunPython("message_handler
+        \ = MessageHandler(callbacks=vimpair.VimCallbacks(vim=vim, session=session))")
 endfunction
 
 function! s:VimpairCleanup()
@@ -198,19 +104,20 @@ function! s:VimpairCleanup()
     autocmd!
   augroup END
 
-  python message_handler = None
-  python connector.disconnect()
+  call g:VimpairRunPython("message_handler = None")
+  call g:VimpairRunPython("vimpair.connector.disconnect()")
 endfunction
 
 
 function! VimpairServerStart()
   call s:VimpairInitialize()
 
-  python connector = ClientConnector(server_socket_factory)
+  call g:VimpairRunPython("vimpair.connector = ClientConnector(server_socket_factory)")
 
   call s:VimpairStartCheckingForClientTimer()
   call s:VimpairStartObserving()
-  python send_file_change()
+  call g:VimpairRunPython("vimpair.send_file_change.enabled = True")
+  call g:VimpairRunPython("vimpair.send_file_change()")
 endfunction
 
 function! VimpairServerStop()
@@ -219,23 +126,24 @@ endfunction
 
 
 function! VimpairClientStart()
+  call g:VimpairRunPython("session = Session()")
   call s:VimpairInitialize()
 
-  python connector = ServerConnector(client_socket_factory)
+  call g:VimpairRunPython("vimpair.connector = ServerConnector(client_socket_factory)")
 
-  python send_file_change.enabled = False
-  python session = Session()
+  call g:VimpairRunPython("vimpair.send_file_change.enabled = False")
   call s:VimpairStartReceivingMessagesTimer()
 endfunction
 
 function! VimpairClientStop()
   call s:VimpairCleanup()
-  python session.end()
+  call g:VimpairRunPython("session.end()")
+  call g:VimpairRunPython("session = None")
 endfunction
 
 
 function! VimpairHandover()
-  python hand_over_control()
+  call g:VimpairRunPython("vimpair.hand_over_control()")")
 endfunction
 
 
