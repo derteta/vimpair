@@ -1,7 +1,8 @@
 from functools import reduce
+import vim
 
 
-def get_current_contents(vim=None):
+def get_current_contents():
     ''' returns the contents of current buffer/file as one string '''
     try:
         lines = vim.current.buffer

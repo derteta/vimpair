@@ -1,6 +1,9 @@
 from mock import Mock
 from unittest import TestCase
+import sys
 
+mock_vim = Mock(current=None)
+sys.modules['vim'] = mock_vim
 from ..vim_interface import (
     apply_contents_update,
     apply_cursor_position,
@@ -23,25 +26,20 @@ def mock_vim_with_cursor(cursor, contents=None):
 
 class GetCurrentContentsTests(TestCase):
 
-    def test_returns_empty_string_without_vim(self):
-        vim = None
-        self.assertEqual(get_current_contents(vim=vim), '')
-
     def test_returns_empty_string_without_current(self):
-        vim = Mock(current=None)
-        self.assertEqual(get_current_contents(vim=vim), '')
+        self.assertEqual(get_current_contents(), '')
 
     def test_returns_empty_string_without_buffer(self):
-        vim = mock_vim_with_contents(None)
-        self.assertEqual(get_current_contents(vim=vim), '')
+        mock_vim.current = Mock(buffer=None)
+        self.assertEqual(get_current_contents(), '')
 
     def test_returns_single_line_as_string(self):
-        vim =mock_vim_with_contents(['1'])
-        self.assertEqual(get_current_contents(vim=vim), '1')
+        mock_vim.current = Mock(buffer=['1'])
+        self.assertEqual(get_current_contents(), '1')
 
     def test_returns_multiple_lines_as_string_with_linebreaks(self):
-        vim = mock_vim_with_contents(['1', '2', '3'])
-        self.assertEqual(get_current_contents(vim=vim), '1\n2\n3')
+        mock_vim.current = Mock(buffer=['1', '2', '3'])
+        self.assertEqual(get_current_contents(), '1\n2\n3')
 
 
 class GetCursorPositionTests(TestCase):

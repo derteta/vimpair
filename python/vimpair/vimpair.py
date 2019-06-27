@@ -45,7 +45,7 @@ def show_status_message(message):
 
 
 def send_contents_update():
-    contents = get_current_contents(vim=vim)
+    contents = get_current_contents()
     messages = generate_contents_update_messages(contents)
     for message in messages:
         connector.connection.send_message(message)
