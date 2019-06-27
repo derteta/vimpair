@@ -44,40 +44,35 @@ class GetCurrentContentsTests(TestCase):
 
 class GetCursorPositionTests(TestCase):
 
-    def test_returns_zero_zero_without_vim(self):
-        vim = None
-        self.assertEqual(get_cursor_position(vim=vim), (0, 0))
-
     def test_returns_zero_zero_without_current(self):
-        vim = Mock(current=None)
-        self.assertEqual(get_cursor_position(vim=vim), (0, 0))
+        self.assertEqual(get_cursor_position(), (0, 0))
 
     def test_returns_zero_zero_without_window(self):
-        vim = Mock(current=Mock(window=None))
-        self.assertEqual(get_cursor_position(vim=vim), (0, 0))
+        mock_vim.current = Mock(window=None)
+        self.assertEqual(get_cursor_position(), (0, 0))
 
     def test_returns_zero_zero_without_cursor(self):
-        vim = mock_vim_with_cursor(None)
-        self.assertEqual(get_cursor_position(vim=vim), (0, 0))
+        mock_vim.current = Mock(window=Mock(cursor=None))
+        self.assertEqual(get_cursor_position(), (0, 0))
 
     def test_returns_zero_based_line(self):
-        vim = mock_vim_with_cursor((1, 0))
-        line, _column = get_cursor_position(vim=vim)
+        mock_vim.current = Mock(window=Mock(cursor=(1, 0)))
+        line, _column = get_cursor_position()
         self.assertEqual(line, 0)
 
     def test_returns_zero_for_negative_line_values(self):
-        vim = mock_vim_with_cursor((-1, 0))
-        line, _column = get_cursor_position(vim=vim)
+        mock_vim.current = Mock(window=Mock(cursor=(-1, 0)))
+        line, _column = get_cursor_position()
         self.assertEqual(line, 0)
 
     def test_returns_column_as_reported(self):
-        vim = mock_vim_with_cursor((1, 7))
-        _line, column = get_cursor_position(vim=vim)
+        mock_vim.current = Mock(window=Mock(cursor=(1, 7)))
+        _line, column = get_cursor_position()
         self.assertEqual(column, 7)
 
     def test_returns_zero_for_negative_column_values(self):
-        vim = mock_vim_with_cursor((1, -7))
-        _line, column = get_cursor_position(vim=vim)
+        mock_vim.current = Mock(window=Mock(cursor=(1, -7)))
+        _line, column = get_cursor_position()
         self.assertEqual(column, 0)
 
 

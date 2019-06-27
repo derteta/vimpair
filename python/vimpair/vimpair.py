@@ -51,7 +51,7 @@ def send_contents_update():
         connector.connection.send_message(message)
 
 def send_cursor_position():
-    line, column = get_cursor_position(vim=vim)
+    line, column = get_cursor_position()
     connector.connection.send_message(generate_cursor_position_message(line, column))
 
 def update_contents_and_cursor():

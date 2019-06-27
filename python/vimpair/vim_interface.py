@@ -28,7 +28,7 @@ def get_current_path(vim=None):
         return ''
 
 
-def get_cursor_position(vim=None):
+def get_cursor_position():
     ''' returns a tuple (line, column) of the cursor position '''
     try:
         cursor = vim.current.window.cursor
