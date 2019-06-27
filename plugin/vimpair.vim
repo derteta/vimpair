@@ -31,8 +31,8 @@ call g:VimpairRunPython(
       \message_handler = None")
 
 
-let g:VimpairShowStatusMessages = 1
 let g:VimpairConcealFilePaths = 1
+let g:VimpairShowStatusMessages = 1
 let g:VimpairTimerInterval = 200
 
 
