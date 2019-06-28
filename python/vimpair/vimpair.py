@@ -15,6 +15,7 @@ from vim_interface import (
     get_current_filename,
     get_current_path,
     get_cursor_position,
+    show_status_message,
     switch_to_buffer,
 )
 
@@ -37,11 +38,6 @@ class SendFileChange(object):
             )
             connector.connection.send_message(message)
             update_contents_and_cursor()
-
-
-def show_status_message(message):
-    if _vim_int('g:VimpairShowStatusMessages') != 0:
-        print('Vimpair:', message)
 
 
 def send_contents_update():

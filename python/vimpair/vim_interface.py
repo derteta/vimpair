@@ -71,3 +71,8 @@ def switch_to_buffer(filename=None):
         )
     except AttributeError:
         pass
+
+
+def show_status_message(message):
+    if int(vim.eval('g:VimpairShowStatusMessages')) != 0:
+        print('Vimpair:', message)
