@@ -54,7 +54,7 @@ def apply_contents_update(contents_string):
         pass
 
 
-def apply_cursor_position(line, column, vim=None):
+def apply_cursor_position(line, column):
     try:
         current_buffer = vim.current.buffer or []
         if line < len(current_buffer) and column < len(current_buffer[line]):

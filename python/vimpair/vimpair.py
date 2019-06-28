@@ -85,7 +85,7 @@ class VimCallbacks(object):
         self._vim = vim
         self._session = session
         self.update_contents = apply_contents_update
-        self.apply_cursor_position = partial(apply_cursor_position, vim=vim)
+        self.apply_cursor_position = apply_cursor_position
 
     def take_control(self):
         show_status_message('You are in control now!')

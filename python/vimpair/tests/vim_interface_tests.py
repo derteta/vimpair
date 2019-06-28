@@ -115,51 +115,46 @@ class ApplyCurrentContentsTests(TestCase):
 
 class ApplyCursorPositionTests(TestCase):
 
-    def test_noop_without_vim(self):
-        vim = None
-        apply_cursor_position(0, 0, vim=vim)
-
     def test_noop_without_current(self):
-        vim = Mock(current=None)
-        apply_cursor_position(0, 0, vim=vim)
+        apply_cursor_position(0, 0)
 
     def test_noop_without_window(self):
-        vim = Mock(current=Mock(window=None, buffer=['Just one line.']))
-        apply_cursor_position(0, 0, vim=vim)
+        mock_vim.current = Mock(window=None, buffer=['Just one line.'])
+        apply_cursor_position(0, 0)
 
     def test_noop_if_given_line_is_outside_buffer(self):
-        vim = mock_vim_with_cursor((1, 0), contents=['Just one line.'])
+        mock_vim.current = Mock(window=Mock(cursor=(1, 0)), buffer=['Just one line.'])
 
-        apply_cursor_position(1000000, 0, vim=vim)
+        apply_cursor_position(1000000, 0)
 
-        self.assertEqual(vim.current.window.cursor, (1, 0))
+        self.assertEqual(mock_vim.current.window.cursor, (1, 0))
 
     def test_noop_if_given_column_is_outside_buffer(self):
-        vim = mock_vim_with_cursor((1, 0), contents=['Just one line.'])
+        mock_vim.current = Mock(window=Mock(cursor=(1, 0)), buffer=['Just one line.'])
 
-        apply_cursor_position(0, 1000000, vim=vim)
+        apply_cursor_position(0, 1000000)
 
-        self.assertEqual(vim.current.window.cursor, (1, 0))
+        self.assertEqual(mock_vim.current.window.cursor, (1, 0))
 
     def test_sets_cursor_to_one_based_valid_line(self):
-        vim = mock_vim_with_cursor(
-            (1, 0),
-            contents=['This is line one.', 'This is line two']
+        mock_vim.current = Mock(
+            window=Mock(cursor=(1, 0)),
+            buffer=['This is line one.', 'This is line two']
         )
 
-        apply_cursor_position(0, 10, vim=vim)
+        apply_cursor_position(0, 10)
 
-        self.assertEqual(vim.current.window.cursor[0], 1)
+        self.assertEqual(mock_vim.current.window.cursor[0], 1)
 
     def test_sets_cursor_to_zero_based_valid_column(self):
-        vim = mock_vim_with_cursor(
-            (1, 0),
-            contents=['This is line one.', 'This is line two']
+        mock_vim.current = Mock(
+            window=Mock(cursor=(1, 0)),
+            buffer=['This is line one.', 'This is line two']
         )
 
-        apply_cursor_position(0, 10, vim=vim)
+        apply_cursor_position(0, 10)
 
-        self.assertEqual(vim.current.window.cursor[1], 10)
+        self.assertEqual(mock_vim.current.window.cursor[1], 10)
 
 
 class SwitchToBufferTests(TestCase):
