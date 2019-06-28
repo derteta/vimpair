@@ -39,7 +39,7 @@ def get_cursor_position():
         return (0, 0)
 
 
-def apply_contents_update(contents_string, vim=None):
+def apply_contents_update(contents_string):
     try:
         current_buffer = vim.current.buffer
         if current_buffer is not None:

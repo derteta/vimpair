@@ -78,48 +78,37 @@ class GetCursorPositionTests(TestCase):
 
 class ApplyCurrentContentsTests(TestCase):
 
-    def test_noop_without_vim(self):
-        vim = None
-        apply_contents_update('This is one line.', vim=vim)
-
     def test_noop_without_current(self):
-        vim = Mock(current=None)
-        apply_contents_update('This is one line.', vim=vim)
+        apply_contents_update('This is one line.')
 
     def test_noop_without_buffer(self):
-        vim = mock_vim_with_contents(None)
-        apply_contents_update('This is one line.', vim=vim)
+        mock_vim.current = Mock(buffer=None)
+        apply_contents_update('This is one line.')
 
     def test_applies_single_line_string(self):
-        vim = mock_vim_with_contents([''])
+        mock_vim.current = Mock(buffer=[''])
 
-        apply_contents_update('This is one line.', vim=vim)
+        apply_contents_update('This is one line.')
 
-        self.assertEqual(vim.current.buffer, ['This is one line.'])
+        self.assertEqual(mock_vim.current.buffer, ['This is one line.'])
 
     def test_applies_multiple_line_string(self):
-        vim = mock_vim_with_contents([''])
+        mock_vim.current = Mock(buffer=[''])
 
-        apply_contents_update(
-            'This is one line.\nThis is another line.',
-            vim=vim
-        )
+        apply_contents_update('This is one line.\nThis is another line.')
 
         self.assertEqual(
-            vim.current.buffer,
+            mock_vim.current.buffer,
             ['This is one line.', 'This is another line.']
         )
 
     def test_removes_superfluous_lines(self):
-        vim = mock_vim_with_contents(['1', '2', '3'])
+        mock_vim.current = Mock(buffer=['1', '2', '3'])
 
-        apply_contents_update(
-            'This is one line.\nThis is another line.',
-            vim=vim
-        )
+        apply_contents_update('This is one line.\nThis is another line.')
 
         self.assertEqual(
-            vim.current.buffer,
+            mock_vim.current.buffer,
             ['This is one line.', 'This is another line.']
         )
 
