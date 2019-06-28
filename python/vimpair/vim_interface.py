@@ -12,7 +12,7 @@ def get_current_contents():
     return reduce(lambda l1, l2: l1 + '\n' + l2, lines or [''])
 
 
-def get_current_filename(vim=None):
+def get_current_filename():
     ''' returns name and extension of the current file '''
     try:
         return vim.eval('expand("%:t")')

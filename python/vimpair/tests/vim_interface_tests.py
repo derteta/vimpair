@@ -177,16 +177,12 @@ class SwitchToBufferTests(TestCase):
 
 class GetCurrentFilenameTests(TestCase):
 
-    def test_returns_empty_string_without_vim(self):
-        vim = None
-        self.assertEqual(get_current_filename(vim=vim), '')
-
     def tests_aquires_filename_with_extension_from_vim(self):
-        vim = Mock()
+        mock_vim.eval = Mock()
 
-        get_current_filename(vim=vim)
+        get_current_filename()
 
-        vim.eval.assert_called_with('expand("%:t")')
+        mock_vim.eval.assert_called_with('expand("%:t")')
 
 
 class GetCurrentPathTests(TestCase):
