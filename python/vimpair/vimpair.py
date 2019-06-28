@@ -93,7 +93,7 @@ class VimCallbacks(object):
         self._vim.command('call s:VimpairStartObserving()')
 
     def file_changed(self, filename=None):
-        switch_to_buffer(self._session.prepend_folder(filename), vim=self._vim)
+        switch_to_buffer(self._session.prepend_folder(filename))
 
     def save_file(self):
         filename = get_current_filename(vim=self._vim)

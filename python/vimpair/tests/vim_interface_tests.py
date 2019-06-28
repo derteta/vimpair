@@ -159,24 +159,20 @@ class ApplyCursorPositionTests(TestCase):
 
 class SwitchToBufferTests(TestCase):
 
-    def test_noop_without_vim(self):
-        vim = None
-        switch_to_buffer(vim=vim)
-
     def test_creates_new_buffer_with_vim(self):
-        vim = Mock()
+        mock_vim.command = Mock()
 
-        switch_to_buffer(vim=vim)
+        switch_to_buffer()
 
-        vim.command.assert_called_with('silent enew')
+        mock_vim.command.assert_called_with('silent enew')
 
     def test_provides_new_buffer_with_given_filename_with_vim(self):
         filename = '.vimrc'
-        vim = Mock()
+        mock_vim.command = Mock()
 
-        switch_to_buffer(filename=filename, vim=vim)
+        switch_to_buffer(filename=filename)
 
-        vim.command.assert_called_with('silent e! %s' % filename)
+        mock_vim.command.assert_called_with('silent e! %s' % filename)
 
 
 class GetCurrentFilenameTests(TestCase):
