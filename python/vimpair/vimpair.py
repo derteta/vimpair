@@ -32,7 +32,7 @@ class SendFileChange(object):
         if self.enabled:
             message = generate_file_change_message(
                 get_current_filename(),
-                folderpath=get_current_path(vim=vim),
+                folderpath=get_current_path(),
                 conceal_path=_vim_int('g:VimpairConcealFilePaths') != 0,
             )
             connector.connection.send_message(message)
@@ -98,7 +98,7 @@ class VimCallbacks(object):
     def save_file(self):
         filename = get_current_filename()
         if filename:
-            path = get_current_path(vim=self._vim)
+            path = get_current_path()
             if not os.path.exists(path):
                 os.makedirs(path)
             filename_and_path = os.path.join(path, filename)

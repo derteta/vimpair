@@ -187,13 +187,9 @@ class GetCurrentFilenameTests(TestCase):
 
 class GetCurrentPathTests(TestCase):
 
-    def test_returns_empty_string_without_vim(self):
-        vim = None
-        self.assertEqual(get_current_path(vim=vim), '')
-
     def tests_aquires_current_files_directory_path_from_vim(self):
-        vim = Mock()
+        mock_vim.eval = Mock()
 
-        get_current_path(vim=vim)
+        get_current_path()
 
-        vim.eval.assert_called_with('expand("%:p:h")')
+        mock_vim.eval.assert_called_with('expand("%:p:h")')

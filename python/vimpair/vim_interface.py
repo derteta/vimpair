@@ -20,7 +20,7 @@ def get_current_filename():
         return ''
 
 
-def get_current_path(vim=None):
+def get_current_path():
     ''' returns the current file's full path without its name '''
     try:
         return vim.eval('expand("%:p:h")')
