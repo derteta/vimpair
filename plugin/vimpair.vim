@@ -86,6 +86,11 @@ function! s:VimpairStartCheckingForClientTimer()
   call s:VimpairStartTimer("call g:VimpairRunPython('vimpair.check_for_new_client()')")
 endfunction
 
+function! s:VimpairTakeControl()
+  call s:VimpairStopTimer()
+  call s:VimpairStartObserving()
+endfunction
+
 
 function! s:VimpairInitialize()
   augroup VimpairCleanup

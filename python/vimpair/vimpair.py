@@ -85,8 +85,7 @@ class VimCallbacks(object):
 
     def take_control(self):
         show_status_message('You are in control now!')
-        self._vim.command('call s:VimpairStopTimer()')
-        self._vim.command('call s:VimpairStartObserving()')
+        self._vim.command('call s:VimpairTakeControl()')
 
     def file_changed(self, filename=None):
         switch_to_buffer(self._session.prepend_folder(filename))
