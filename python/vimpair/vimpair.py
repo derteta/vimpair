@@ -71,8 +71,7 @@ def hand_over_control():
     else:
         show_status_message('Handing over control')
         connector.connection.send_message(generate_take_control_message())
-        vim.command('call s:VimpairStopObserving()')
-        vim.command('call s:VimpairStartReceivingMessagesTimer()')
+        vim.command('call s:VimpairReleaseControl()')
 
 
 class VimCallbacks(object):

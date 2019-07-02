@@ -91,6 +91,11 @@ function! s:VimpairTakeControl()
   call s:VimpairStartObserving()
 endfunction
 
+function! s:VimpairReleaseControl()
+  call s:VimpairStopObserving()
+  call s:VimpairStartReceivingMessagesTimer()
+endfunction
+
 
 function! s:VimpairInitialize()
   augroup VimpairCleanup
