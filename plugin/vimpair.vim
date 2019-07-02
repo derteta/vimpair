@@ -82,10 +82,6 @@ function! s:VimpairStartReceivingMessagesTimer()
         \)
 endfunction
 
-function! s:VimpairStartCheckingForClientTimer()
-  call s:VimpairStartTimer("call g:VimpairRunPython('vimpair.check_for_new_client()')")
-endfunction
-
 function! s:VimpairTakeControl()
   call s:VimpairStopTimer()
   call s:VimpairStartObserving()
@@ -124,7 +120,7 @@ function! VimpairServerStart()
 
   call g:VimpairRunPython("vimpair.connector = ClientConnector(server_socket_factory)")
 
-  call s:VimpairStartCheckingForClientTimer()
+  call s:VimpairStartTimer("call g:VimpairRunPython('vimpair.check_for_new_client()')")
   call s:VimpairStartObserving()
   call g:VimpairRunPython("vimpair.send_file_change.enabled = True")
   call g:VimpairRunPython("vimpair.send_file_change()")
