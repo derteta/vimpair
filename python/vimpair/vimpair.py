@@ -70,8 +70,8 @@ def hand_over_control():
         show_status_message('No client connected')
     else:
         show_status_message('Handing over control')
-        vim.command('call s:VimpairStopObserving()')
         connector.connection.send_message(generate_take_control_message())
+        vim.command('call s:VimpairStopObserving()')
         vim.command('call s:VimpairStartReceivingMessagesTimer()')
 
 
