@@ -22,20 +22,19 @@ from vim_interface import (
 
 
 connector = None
-vim = None
 
-_vim_int = lambda name: int(vim.eval(name))
 
 class SendFileChange(object):
 
     enabled = True
+    should_conceal_path = lambda: True
 
     def __call__(self):
         if self.enabled:
             message = generate_file_change_message(
                 get_current_filename(),
                 folderpath=get_current_path(),
-                conceal_path=_vim_int('g:VimpairConcealFilePaths') != 0,
+                conceal_path=self.should_conceal_path(),
             )
             connector.connection.send_message(message)
             update_contents_and_cursor()

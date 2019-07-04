@@ -24,10 +24,9 @@ call g:VimpairRunPython(
       \from session import Session")
 
 call g:VimpairRunPython(
-      \"vimpair.vim = vim                           \n
-      \server_socket_factory = create_server_socket \n
-      \client_socket_factory = create_client_socket \n
-      \session = None                               \n
+      \"server_socket_factory = create_server_socket \n
+      \client_socket_factory = create_client_socket  \n
+      \session = None                                \n
       \message_handler = None")
 
 
@@ -132,8 +131,12 @@ function! VimpairServerStart()
         \  "\")"
         \)
   call s:VimpairStartObserving()
-  call g:VimpairRunPython("vimpair.send_file_change.enabled = True")
-  call g:VimpairRunPython("vimpair.send_file_change()")
+  call g:VimpairRunPython(
+        \  "vimpair.send_file_change.enabled = True \n" .
+        \  "vimpair.send_file_change.should_conceal_path =" .
+        \  "    lambda: int(vim.eval('g:VimpairConcealFilePaths')) != 0 \n" .
+        \  "vimpair.send_file_change()"
+        \)
 endfunction
 
 function! VimpairServerStop()
