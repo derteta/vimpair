@@ -159,7 +159,10 @@ endfunction
 
 
 function! VimpairHandover()
-  call g:VimpairRunPython("vimpair.hand_over_control()")
+  call g:VimpairRunPython(
+        \  "if vimpair.hand_over_control():" .
+        \  "    vim.command('call s:VimpairReleaseControl()')"
+        \)
 endfunction
 
 

@@ -70,10 +70,11 @@ def check_for_new_client():
 def hand_over_control():
     if connector.is_waiting_for_connection:
         show_status_message('No client connected')
+        return False
     else:
         show_status_message('Handing over control')
         connector.connection.send_message(generate_take_control_message())
-        vim.command('call s:VimpairReleaseControl()')
+        return True
 
 
 class VimCallbacks(object):
