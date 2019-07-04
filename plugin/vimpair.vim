@@ -98,8 +98,14 @@ function! s:VimpairInitialize()
     autocmd VimLeavePre * call s:VimpairCleanup()
   augroup END
 
-  call g:VimpairRunPython("message_handler
-        \ = MessageHandler(callbacks=vimpair.VimCallbacks(vim=vim, session=session))")
+  call g:VimpairRunPython(
+        \  "message_handler = MessageHandler(" .
+        \  "    callbacks=vimpair.VimCallbacks(" .
+        \  "        take_control=lambda: vim.command('call s:VimpairTakeControl()')," .
+        \  "        session=session," .
+        \  "    )" .
+        \  ")"
+        \)
 endfunction
 
 function! s:VimpairCleanup()

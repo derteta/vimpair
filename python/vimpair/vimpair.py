@@ -78,15 +78,15 @@ def hand_over_control():
 
 class VimCallbacks(object):
 
-    def __init__(self, vim=None, session=None):
-        self._vim = vim
+    def __init__(self, take_control=None, session=None):
+        self._take_control = take_control
         self._session = session
         self.update_contents = apply_contents_update
         self.apply_cursor_position = apply_cursor_position
 
     def take_control(self):
         show_status_message('You are in control now!')
-        self._vim.command('call s:VimpairTakeControl()')
+        self._take_control()
 
     def file_changed(self, filename=None):
         switch_to_buffer(self._session.prepend_folder(filename))
