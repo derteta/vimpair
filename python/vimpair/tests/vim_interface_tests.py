@@ -11,6 +11,7 @@ from ..vim_interface import (
     get_current_filename,
     get_current_path,
     get_cursor_position,
+    save_current_file,
     switch_to_buffer,
 )
 
@@ -193,3 +194,13 @@ class GetCurrentPathTests(TestCase):
         get_current_path()
 
         mock_vim.eval.assert_called_with('expand("%:p:h")')
+
+
+class SaveFileTests(TestCase):
+
+    def tests_silently_writes_current_buffer_to_given_path(self):
+        mock_vim.command = Mock()
+
+        save_current_file('/path/to/file.py')
+
+        mock_vim.command.assert_called_with('silent write! /path/to/file.py')

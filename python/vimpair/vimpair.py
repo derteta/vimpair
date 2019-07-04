@@ -15,6 +15,7 @@ from vim_interface import (
     get_current_filename,
     get_current_path,
     get_cursor_position,
+    save_current_file,
     show_status_message,
     switch_to_buffer,
 )
@@ -97,4 +98,4 @@ class VimCallbacks(object):
                 os.makedirs(path)
             filename_and_path = os.path.join(path, filename)
             show_status_message('Saving file "%s"' % filename_and_path)
-            self._vim.command('silent write! ' + filename_and_path)
+            save_current_file(filename_and_path)

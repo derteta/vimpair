@@ -73,6 +73,13 @@ def switch_to_buffer(filename=None):
         pass
 
 
+def save_current_file(full_path):
+    try:
+        vim.command('silent write! ' + full_path)
+    except AttributeError:
+        pass
+
+
 def show_status_message(message):
     if int(vim.eval('g:VimpairShowStatusMessages')) != 0:
         print('Vimpair:', message)
