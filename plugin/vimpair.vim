@@ -13,21 +13,24 @@ endfunction
 
 call g:VimpairRunPython("import sys, os, vim")
 call g:VimpairRunPython(
-      \ "sys.path.append(os.path.abspath(os.path.join('"
-      \ . expand("<sfile>:p:h") . "', '..', 'python', 'vimpair')))")
+      \  "sys.path.append(os.path.abspath(os.path.join('" .
+      \  expand("<sfile>:p:h") . "', '..', 'python', 'vimpair')))"
+      \)
 
 call g:VimpairRunPython(
-      \"import vimpair                                                   \n
-      \from connection import create_client_socket, create_server_socket \n
-      \from connectors import ClientConnector, ServerConnector           \n
-      \from protocol import MessageHandler                               \n
-      \from session import Session")
+      \  "import vimpair                                                    \n" .
+      \  "from connection import create_client_socket, create_server_socket \n" .
+      \  "from connectors import ClientConnector, ServerConnector           \n" .
+      \  "from protocol import MessageHandler                               \n" .
+      \  "from session import Session"
+      \)
 
 call g:VimpairRunPython(
-      \"server_socket_factory = create_server_socket \n
-      \client_socket_factory = create_client_socket  \n
-      \session = None                                \n
-      \message_handler = None")
+      \  "server_socket_factory = create_server_socket \n" .
+      \  "client_socket_factory = create_client_socket \n" .
+      \  "session = None                               \n" .
+      \  "message_handler = None"
+      \)
 
 
 let g:VimpairConcealFilePaths = 1
