@@ -120,7 +120,11 @@ function! VimpairServerStart()
 
   call g:VimpairRunPython("vimpair.connector = ClientConnector(server_socket_factory)")
 
-  call s:VimpairStartTimer("call g:VimpairRunPython('vimpair.check_for_new_client()')")
+  call s:VimpairStartTimer(
+        \  "call g:VimpairRunPython(\"" .
+        \  "if vimpair.check_for_new_client(): vim.command('call s:VimpairStopTimer()')" .
+        \  "\")"
+        \)
   call s:VimpairStartObserving()
   call g:VimpairRunPython("vimpair.send_file_change.enabled = True")
   call g:VimpairRunPython("vimpair.send_file_change()")

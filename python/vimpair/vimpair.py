@@ -64,7 +64,8 @@ send_file_change = SendFileChange()
 def check_for_new_client():
     if not connector.is_waiting_for_connection:
         update_contents_and_cursor()
-        vim.command('call s:VimpairStopTimer()')
+        return True
+    return False
 
 def hand_over_control():
     if connector.is_waiting_for_connection:
