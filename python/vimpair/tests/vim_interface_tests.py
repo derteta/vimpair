@@ -2,7 +2,7 @@ from mock import Mock
 from unittest import TestCase
 import sys
 
-mock_vim = Mock(current=None)
+mock_vim = Mock(current=None, command=Mock(), eval=Mock())
 sys.modules['vim'] = mock_vim
 from ..vim_interface import (
     apply_contents_update,
@@ -161,16 +161,12 @@ class ApplyCursorPositionTests(TestCase):
 class SwitchToBufferTests(TestCase):
 
     def test_creates_new_buffer_with_vim(self):
-        mock_vim.command = Mock()
-
         switch_to_buffer()
 
         mock_vim.command.assert_called_with('silent enew')
 
     def test_provides_new_buffer_with_given_filename_with_vim(self):
         filename = '.vimrc'
-        mock_vim.command = Mock()
-
         switch_to_buffer(filename=filename)
 
         mock_vim.command.assert_called_with('silent e! %s' % filename)
@@ -179,8 +175,6 @@ class SwitchToBufferTests(TestCase):
 class GetCurrentFilenameTests(TestCase):
 
     def tests_aquires_filename_with_extension_from_vim(self):
-        mock_vim.eval = Mock()
-
         get_current_filename()
 
         mock_vim.eval.assert_called_with('expand("%:t")')
@@ -189,8 +183,6 @@ class GetCurrentFilenameTests(TestCase):
 class GetCurrentPathTests(TestCase):
 
     def tests_aquires_current_files_directory_path_from_vim(self):
-        mock_vim.eval = Mock()
-
         get_current_path()
 
         mock_vim.eval.assert_called_with('expand("%:p:h")')
@@ -199,8 +191,6 @@ class GetCurrentPathTests(TestCase):
 class SaveFileTests(TestCase):
 
     def tests_silently_writes_current_buffer_to_given_path(self):
-        mock_vim.command = Mock()
-
         save_current_file('/path/to/file.py')
 
         mock_vim.command.assert_called_with('silent write! /path/to/file.py')
