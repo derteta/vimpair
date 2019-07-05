@@ -61,10 +61,11 @@ endfunction
 
 let s:VimpairTimer = ""
 
-function! s:VimpairStartTimer(timer_command)
+function! s:VimpairStartTimer(python_command)
+  let l:timer_command = "call g:VimpairRunPython(\"" . a:python_command . "\")"
   let s:VimpairTimer = timer_start(
         \  g:VimpairTimerInterval,
-        \  {-> execute(a:timer_command, "")},
+        \  {-> execute(l:timer_command, "")},
         \  {'repeat': -1}
         \)
 endfunction
@@ -79,9 +80,7 @@ endfunction
 
 function! s:VimpairStartReceivingMessagesTimer()
   call s:VimpairStartTimer(
-        \  "call g:VimpairRunPython(\"message_handler.process(" .
-        \  "    vimpair.connector.connection.received_messages" .
-        \  ")\")"
+        \  "message_handler.process(vimpair.connector.connection.received_messages)"
         \)
 endfunction
 
@@ -130,9 +129,7 @@ function! VimpairServerStart()
   call g:VimpairRunPython("vimpair.connector = ClientConnector(server_socket_factory)")
 
   call s:VimpairStartTimer(
-        \  "call g:VimpairRunPython(\"" .
-        \  "if vimpair.check_for_new_client(): vim_call('s:VimpairStopTimer')" .
-        \  "\")"
+        \  "if vimpair.check_for_new_client(): vim_call('s:VimpairStopTimer')"
         \)
   call s:VimpairStartObserving()
   call g:VimpairRunPython(
