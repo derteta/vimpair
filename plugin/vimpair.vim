@@ -26,10 +26,11 @@ call g:VimpairRunPython(
       \)
 
 call g:VimpairRunPython(
-      \  "server_socket_factory = create_server_socket \n" .
-      \  "client_socket_factory = create_client_socket \n" .
-      \  "session = None                               \n" .
-      \  "message_handler = None"
+      \  "server_socket_factory = create_server_socket   \n" .
+      \  "client_socket_factory = create_client_socket   \n" .
+      \  "session = None                                 \n" .
+      \  "message_handler = None                         \n" .
+      \  "vim_call = lambda f: vim.command('call %s()' % f)"
       \)
 
 
@@ -103,7 +104,7 @@ function! s:VimpairInitialize()
   call g:VimpairRunPython(
         \  "message_handler = MessageHandler(" .
         \  "    callbacks=vimpair.VimCallbacks(" .
-        \  "        take_control=lambda: vim.command('call s:VimpairTakeControl()')," .
+        \  "        take_control=lambda: vim_call('s:VimpairTakeControl')," .
         \  "        session=session," .
         \  "    )" .
         \  ")"
@@ -130,7 +131,7 @@ function! VimpairServerStart()
 
   call s:VimpairStartTimer(
         \  "call g:VimpairRunPython(\"" .
-        \  "if vimpair.check_for_new_client(): vim.command('call s:VimpairStopTimer()')" .
+        \  "if vimpair.check_for_new_client(): vim_call('s:VimpairStopTimer')" .
         \  "\")"
         \)
   call s:VimpairStartObserving()
@@ -166,8 +167,7 @@ endfunction
 
 function! VimpairHandover()
   call g:VimpairRunPython(
-        \  "if vimpair.hand_over_control():" .
-        \  "    vim.command('call s:VimpairReleaseControl()')"
+        \  "if vimpair.hand_over_control(): vim_call('s:VimpairReleaseControl')"
         \)
 endfunction
 
