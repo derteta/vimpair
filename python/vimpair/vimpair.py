@@ -76,7 +76,7 @@ def hand_over_control():
         return True
 
 
-class VimCallbacks(object):
+class MessageCallbacks(object):
 
     def __init__(self, take_control=None, session=None):
         self._take_control = take_control

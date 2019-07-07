@@ -102,7 +102,7 @@ function! s:VimpairInitialize()
 
   call g:VimpairRunPython(
         \  "message_handler = MessageHandler(" .
-        \  "    callbacks=vimpair.VimCallbacks(" .
+        \  "    callbacks=vimpair.MessageCallbacks(" .
         \  "        take_control=lambda: vim_call('s:VimpairTakeControl')," .
         \  "        session=session," .
         \  "    )" .
