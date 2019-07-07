@@ -13,26 +13,29 @@ endfunction
 
 call g:VimpairRunPython("import sys, os, vim")
 call g:VimpairRunPython(
-      \ "sys.path.append(os.path.abspath(os.path.join('"
-      \ . expand("<sfile>:p:h") . "', '..', 'python', 'vimpair')))")
+      \  "sys.path.append(os.path.abspath(os.path.join('" .
+      \  expand("<sfile>:p:h") . "', '..', 'python', 'vimpair')))"
+      \)
 
 call g:VimpairRunPython(
-      \"import vimpair                                                   \n
-      \from connection import create_client_socket, create_server_socket \n
-      \from connectors import ClientConnector, ServerConnector           \n
-      \from protocol import MessageHandler                               \n
-      \from session import Session")
+      \  "import vimpair                                                    \n" .
+      \  "from connection import create_client_socket, create_server_socket \n" .
+      \  "from connectors import ClientConnector, ServerConnector           \n" .
+      \  "from protocol import MessageHandler                               \n" .
+      \  "from session import Session"
+      \)
 
 call g:VimpairRunPython(
-      \"vimpair.vim = vim                           \n
-      \server_socket_factory = create_server_socket \n
-      \client_socket_factory = create_client_socket \n
-      \session = None                               \n
-      \message_handler = None")
+      \  "server_socket_factory = create_server_socket   \n" .
+      \  "client_socket_factory = create_client_socket   \n" .
+      \  "session = None                                 \n" .
+      \  "message_handler = None                         \n" .
+      \  "vim_call = lambda f: vim.command('call %s()' % f)"
+      \)
 
 
-let g:VimpairShowStatusMessages = 1
 let g:VimpairConcealFilePaths = 1
+let g:VimpairShowStatusMessages = 1
 let g:VimpairTimerInterval = 200
 
 
@@ -58,10 +61,11 @@ endfunction
 
 let s:VimpairTimer = ""
 
-function! s:VimpairStartTimer(timer_command)
+function! s:VimpairStartTimer(python_command)
+  let l:timer_command = "call g:VimpairRunPython(\"" . a:python_command . "\")"
   let s:VimpairTimer = timer_start(
         \  g:VimpairTimerInterval,
-        \  {-> execute(a:timer_command, "")},
+        \  {-> execute(l:timer_command, "")},
         \  {'repeat': -1}
         \)
 endfunction
@@ -76,14 +80,18 @@ endfunction
 
 function! s:VimpairStartReceivingMessagesTimer()
   call s:VimpairStartTimer(
-        \  "call g:VimpairRunPython(\"message_handler.process(" .
-        \  "    vimpair.connector.connection.received_messages" .
-        \  ")\")"
+        \  "message_handler.process(vimpair.connector.connection.received_messages)"
         \)
 endfunction
 
-function! s:VimpairStartCheckingForClientTimer()
-  call s:VimpairStartTimer("call g:VimpairRunPython('vimpair.check_for_new_client()')")
+function! s:VimpairTakeControl()
+  call s:VimpairStopTimer()
+  call s:VimpairStartObserving()
+endfunction
+
+function! s:VimpairReleaseControl()
+  call s:VimpairStopObserving()
+  call s:VimpairStartReceivingMessagesTimer()
 endfunction
 
 
@@ -92,8 +100,14 @@ function! s:VimpairInitialize()
     autocmd VimLeavePre * call s:VimpairCleanup()
   augroup END
 
-  call g:VimpairRunPython("message_handler
-        \ = MessageHandler(callbacks=vimpair.VimCallbacks(vim=vim, session=session))")
+  call g:VimpairRunPython(
+        \  "message_handler = MessageHandler(" .
+        \  "    callbacks=vimpair.MessageCallbacks(" .
+        \  "        take_control=lambda: vim_call('s:VimpairTakeControl')," .
+        \  "        session=session," .
+        \  "    )" .
+        \  ")"
+        \)
 endfunction
 
 function! s:VimpairCleanup()
@@ -114,10 +128,16 @@ function! VimpairServerStart()
 
   call g:VimpairRunPython("vimpair.connector = ClientConnector(server_socket_factory)")
 
-  call s:VimpairStartCheckingForClientTimer()
+  call s:VimpairStartTimer(
+        \  "if vimpair.check_for_new_client(): vim_call('s:VimpairStopTimer')"
+        \)
   call s:VimpairStartObserving()
-  call g:VimpairRunPython("vimpair.send_file_change.enabled = True")
-  call g:VimpairRunPython("vimpair.send_file_change()")
+  call g:VimpairRunPython(
+        \  "vimpair.send_file_change.enabled = True \n" .
+        \  "vimpair.send_file_change.should_conceal_path =" .
+        \  "    lambda: int(vim.eval('g:VimpairConcealFilePaths')) != 0 \n" .
+        \  "vimpair.send_file_change()"
+        \)
 endfunction
 
 function! VimpairServerStop()
@@ -143,7 +163,9 @@ endfunction
 
 
 function! VimpairHandover()
-  call g:VimpairRunPython("vimpair.hand_over_control()")")
+  call g:VimpairRunPython(
+        \  "if vimpair.hand_over_control(): vim_call('s:VimpairReleaseControl')"
+        \)
 endfunction
 
 
